@@ -2376,3 +2376,4 @@ node_modules/phaser/types/SpineGameObject.d.ts
 node_modules/phaser/types/SpinePlugin.d.ts
 desktop.ini
 package-lock.json
+.vscode/launch.json

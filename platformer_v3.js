@@ -138,8 +138,8 @@ function create() {
     }
 
     // Add keyboard listener to start or restart game 
-    this.input.keyboard.on('keydown-SPACE', function () {
-        startGame(scene, playButton);
+    this.input.keyboard.on('keydown-SPACE', () => {
+        if (gameState != 'during') startGame(this, playButton);
     });
 
     // Spawn obstacles with random delay
@@ -170,16 +170,18 @@ function startGame(scene, killButton) {
     obstaclesArray = [];
 
     if (killButton) {
-    // Tween for fading in the button background
-    scene.tweens.add({
-        targets: killButton,
-        alpha: 0,  // Fade to fully invisible (alpha = 0)
-        duration: 500,  // 1-second fade duration
-        ease: 'Linear'
-    });
+        // Tween for fading in the button background
+        scene.tweens.add({
+            targets: killButton,
+            alpha: 0,  // Fade to fully invisible (alpha = 0)
+            duration: 500,  // 1-second fade duration
+            ease: 'Linear',
+            onComplete: () => {
+                killButton.destroy();  // Destroy the graphic
+                killButton = null;     // Set to null to avoid errors on multiple clicks
+            }
+        });
 
-        killButton.destroy();  // Destroy the graphic
-        killButton = null;     // Set to null to avoid errors on multiple clicks
     }
 }
 
@@ -339,13 +341,13 @@ function addButton(scene, buttonText) {
     // Make the button interactive
     buttonGroup.setInteractive();
 
-    buttonGroup.on('pointerover', function () {
+    buttonGroup.on('pointerover', () => {
         scene.input.setDefaultCursor('pointer');  // Change the cursor to pointer
-    }, this);
+    });
 
-    buttonGroup.on('pointerout', function () {
+    buttonGroup.on('pointerout', () => {
         scene.input.setDefaultCursor('default');  // Reset the cursor back to default
-    }, this);
+    });
 
 
     return buttonGroup;
