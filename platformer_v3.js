@@ -41,6 +41,13 @@ let winner = false;
 
 let player;
 let cursors;
+// Create an input state object to manage all player inputs
+let inputState = {
+    left: false,
+    right: false,
+    jump: false,
+    down: false
+};
 let obstaclesArray = [];
 let ground, groundCollider;
 let text;
@@ -49,21 +56,12 @@ let gameClock = 0;
 let scoreText;
 let buttonGroup;
 
-// check if we are on a mobile screen and if so increase the height and add a joystick
-<div class="mobile-controls">
-    <button id="left-btn">Left</button>
-    <button id="right-btn">Right</button>
-    <button id="jump-btn">Jump</button>
-</div>
-
-<canvas id="gameCanvas"></canvas>
-
 
 // Initialize Phaser game
 var config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
-    height: screenHeight,
+    height: 600,
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
@@ -127,7 +125,8 @@ function create() {
     groundCollider.create(config.width / 2, groundHeight - 25, 'tiles', 2).setDisplaySize(config.width * 1.2, 0).refreshBody();
     this.physics.add.collider(player, groundCollider);
 
-    cursors = this.input.keyboard.createCursorKeys();
+        // Combine both keyboard and touch controls
+        setupControls.call(this);
 
     hedgeLogo = this.physics.add.sprite(50,50, 'hedgeLogo'); // set to appear off screen to the right
     hedgeLogo.displayWidth = 50;
@@ -455,6 +454,50 @@ function showPassedCelebration(scene, obstacle) {
     });
 }
 
+function setupControls() {
+    // Setup combined controls (keyboard and touch)
+    // Keyboard controls (for desktop)
+    cursors = this.input.keyboard.createCursorKeys();
+    
+    // Left and right arrow keys
+    cursors.left.on('down', () => inputState.left = true);
+    cursors.left.on('up', () => inputState.left = false);
+
+    cursors.right.on('down', () => inputState.right = true);
+    cursors.right.on('up', () => inputState.right = false);
+
+    // up cursor for jumping
+    cursors.up.on('down', () => inputState.jump = true);
+    cursors.up.on('up', () => inputState.jump = false);
+    // space for jumping
+    cursors.space.on('down', () => inputState.jump = true);
+    cursors.space.on('up', () => inputState.jump = false);
+
+        // down cursor bar for jumping
+        cursors.down.on('down', () => inputState.down = true);
+        cursors.down.on('up', () => inputState.down = false);
+
+// Setup touch controls for mobile
+
+    const leftButton = document.getElementById('left-btn');
+    const rightButton = document.getElementById('right-btn');
+    const jumpButton = document.getElementById('jump-btn');
+
+    // Left button touch events
+    leftButton.addEventListener('touchstart', () => inputState.left = true);
+    leftButton.addEventListener('touchend', () => inputState.left = false);
+
+    // Right button touch events
+    rightButton.addEventListener('touchstart', () => inputState.right = true);
+    rightButton.addEventListener('touchend', () => inputState.right = false);
+
+    // Jump button touch event
+    jumpButton.addEventListener('touchstart', () => inputState.jump = true);
+    jumpButton.addEventListener('touchend', () => inputState.jump = false);
+
+}
+
+
 function update() {
 
     if (gameState === 'after') {
@@ -466,20 +509,20 @@ function update() {
 
     if (gameState === 'during') player.body.setVelocityX(-platformSpeed * platToVelFactor); // move left
 
-    if (cursors.left.isDown) // if the left arrow key is down
+    if (inputState.left) // if the left arrow key is down
     {
         player.body.setVelocityX(-platformSpeed * platToVelFactor * 4.5); // move left
         player.flipX = false; // flip the sprite to the left
     }
-    else if (cursors.right.isDown) // if the right arrow key is down
+    else if (inputState.right) // if the right arrow key is down
     {
         player.body.setVelocityX(platformSpeed * platToVelFactor * 3); // move right
         player.flipX = true; // use the original sprite looking to the right
     }
-    if ((cursors.space.isDown || cursors.up.isDown) && player.body.onFloor()) {
+    if (inputState.jump && player.body.onFloor()) {
         player.body.setVelocityY(-1200); // jump up
     }
-    else if ((cursors.down.isDown) && !player.body.onFloor()) {
+    else if (inputState.down && !player.body.onFloor()) {
         player.body.setVelocityY(400); // pull jump down
     }
     //  // }
