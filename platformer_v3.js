@@ -265,9 +265,9 @@ function addObstacle() {
         if (obstacles[obCh][5] === 'leftright') {
             this.tweens.add({
                 targets: obstacle.body.velocity,
-                x: velX - 40,        // Move the object up by 50 pixels
+                x: velX - 80,        // Move the object up by 50 pixels
                 ease: 'Sine.easeInOut',    // Smooth easing for up-and-down motion
-                duration: 500,             // Duration of the wobble (500 ms up, 500 ms down)
+                duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
                 yoyo: true,                // Yoyo makes the object go back down after reaching the top
                 repeat: -1                 // Repeat indefinitely for continuous wobble
             });
