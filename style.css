@@ -1,0 +1,40 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+/* Style for buttons */
+.mobile-controls {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    pointer-events: none; /* Prevents buttons from blocking game canvas touch */
+}
+
+.mobile-controls button {
+    width: 80px;
+    height: 80px;
+    font-size: 20px;
+    border-radius: 50%;
+    background-color: #333;
+    color: white;
+    pointer-events: auto; /* Re-enables pointer events for the buttons */
+    opacity: 0.7;
+    border: none;
+}
+
+/* Media query: Hide buttons on desktop */
+@media (min-width: 768px) {
+    .mobile-controls {
+        display: none;
+    }
+}

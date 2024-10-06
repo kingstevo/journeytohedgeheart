@@ -49,11 +49,21 @@ let gameClock = 0;
 let scoreText;
 let buttonGroup;
 
+// check if we are on a mobile screen and if so increase the height and add a joystick
+<div class="mobile-controls">
+    <button id="left-btn">Left</button>
+    <button id="right-btn">Right</button>
+    <button id="jump-btn">Jump</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+
 // Initialize Phaser game
 var config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
-    height: 600,
+    height: screenHeight,
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
