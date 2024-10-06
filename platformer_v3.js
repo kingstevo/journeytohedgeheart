@@ -139,7 +139,7 @@ function create() {
 
     // Add keyboard listener to start or restart game 
     this.input.keyboard.on('keydown-SPACE', function () {
-        startGame(this, playButton);
+        startGame(scene, playButton);
     });
 
     // Spawn obstacles with random delay

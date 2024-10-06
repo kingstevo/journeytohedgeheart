@@ -1,140 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+    <script src="node_modules/phaser/dist/phaser-arcade-physics.min.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+    </style>
 </head>
 <body>
 
-    <script>
-
- // Initialize Phaser game
-var config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    backgroundColor: '#87CEEB', // Light blue sky color
-    physics: {
-        default: 'arcade',
-        arcade: {
-            gravity: { y: 1000 },  // Gravity pulls the player down
-            debug: false
-        }
-    },
-    scene: {
-        preload,
-        create,
-        update
-    }
-};
-
-const game = new Phaser.Game(config);
-
-
-let score = 0;
-let scoreText;
-let obstacles;
-let cursors;
-let platforms;
-let player;
-
-
-
-function preload() {
-    // Load assets like emojis or custom sprites here
-    //this.load.image('player', 'assets/player.png'); // Replace with your emoji image path
-    //this.load.image('platform', 'assets/platform.png');
-    //this.load.image('obstacle', 'assets/obstacle.png');
-}
-
-function create() {
-    scoreText = this.add.text(16, 16, 'Distance: 0', { fontSize: '32px' });
-
-    // Create player character and platform (surface) using emojis or images
-    player = this.add.text(100, 450, '😃', { fontSize: '64px' });
-
-    this.physics.add.existing(player);
-
-    player.body.setBounce(0.2);  // Makes the character bounce a bit
-    player.body.setCollideWorldBounds(true);  // Keep the player within the screen
-    player.body.setGravityY(300);
-
-    // Create the ground (surface)
- 
-    platforms = this.physics.add.staticGroup();
-    platforms.create(50, 450, '🧱', { fontSize: '64px' }).setScale(2).refreshBody();  // Horizontal platform
-
-    // Additional platforms
-    platforms.create(400, 250, '🌲', { fontSize: '64px' });
-    platforms.create(200, 650, '🌲', { fontSize: '64px' });
-    platforms.create(700, 450, '🌲', { fontSize: '64px' });
-
-    // Add obstacles and collision logic here
-    obstacles = this.physics.add.group();
-
-    // Generate an obstacle every 2 seconds
-    this.time.addEvent({
-        delay: 2000,
-        callback: addObstacle,
-        callbackScope: this,
-        loop: true
-    });
-
-}
-
-function addObstacle() {
-    // Create an emoji obstacle as text
-    let obstacle = this.add.text(600, 500, '🚧', { fontSize: '64px' });
-    
-    // Add physics to the obstacle
-    this.physics.add.existing(obstacle);
-    
-    // Set horizontal velocity to scroll the obstacle from right to left
-    obstacle.body.setVelocityX(-200);
-
-    // Add the obstacle to the group
-    obstacles.add(obstacle);
-
-}
-
-function hitObstacle(player, obstacle) {
-    this.physics.pause();  // End game on collision
-    player.setTint(0xff0000);  // Flash red to show game over
-    player.body.setVelocity(0); // Stop player movement
-    scoreText.setText('Game Over! Final Score: ' + score);
-}
-
-function update() {
-
-    score += 1;
-    scoreText.setText('Distance: ' + score);
-
-    // Handle user input (e.g., moving left, right, jumping)
-    cursors = this.input.keyboard.createCursorKeys();
-
-    if (cursors.left.isDown) {
-        player.body.setVelocityX(-160);  // Move left
-    } else if (cursors.right.isDown) {
-        player.body.setVelocityX(160);  // Move right
-    } else {
-        player.body.setVelocityX(0);  // Stop moving
-    }
-
-    if (cursors.up.isDown  && player.body.touching.down) {
-        player.body.setVelocityY(-330);  // Jump
-    }
-
-        // Scroll obstacles and platforms
-    obstacles.getChildren().forEach(function(obstacle) {
-        if (obstacle.x < -100) { // Remove obstacles that go off-screen
-            obstacle.destroy();
-        }
-    });
-
-    // Update score, handle obstacles, etc.
-    this.physics.add.collider(player, obstacles, hitObstacle, null, this);
-}
-
-    </script>
+<script src="platformer_v3.js"></script>
 
 </body>
 </html>
