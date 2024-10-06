@@ -7,7 +7,7 @@
 /* to do:
 - work on mobile
 X scale to fit window size
-- better collision detection
+? better collision detection
 - trees in background
 - max and min spacing for each ostacle type
 - first obstacle doesn't kill!
@@ -120,10 +120,11 @@ function create() {
     cursors = this.input.keyboard.createCursorKeys();
 
     hedgeLogo = this.physics.add.sprite(50,50, 'hedgeLogo'); // set to appear off screen to the right
-    hedgeLogo.displayWidth = 100;
-    hedgeLogo.scaleY = player.scaleX;
+    hedgeLogo.displayWidth = 50;
+    hedgeLogo.scaleY = hedgeLogo.scaleX;
     hedgeLogo.setScrollFactor(0);
-    hedgeLogo.setDepth(300)
+    hedgeLogo.setGravityY(-gravity);
+    hedgeLogo.setDepth(300);
 
 
     score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
@@ -233,7 +234,7 @@ function addObstacle() {
             ['flamingo', 1.5, 450, gravity, 80, false, 10, 3600],
             ['crab', 0.5, 450, gravity, 80, 'leftright', 9, 3600],
             ['bird', 2, 250, -gravity, 80, 'updown', 8, 7200],
-            ['cactusL', 1, 450, gravity, 140, false, 4, 10800],
+            ['cactusL', 1, 460, gravity, 140, false, 4, 10800],
             ['cactusS', 1, 450, gravity, 80, false, 5, 3600],
         ];
 
