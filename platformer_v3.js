@@ -19,8 +19,8 @@ X fix jumping movement
 X space to start, space to play again
 X better score display
 - better winner sequence
-- host online with domain
-- create logo, favicon, name
+X host online with domain
+X create logo, favicon, name
 - more interesting background
 - walk along start button
 X reset gameclock on new game
@@ -231,7 +231,7 @@ function addObstacle() {
 
         // Obstacle array: name, speed factor, starting height, gravity, width, wobble, depth, score (seconds)
         let obstacles = [
-            ['flamingo', 1.5, 450, gravity, 80, false, 10, 3600],
+            ['flamingo', 1.5, 450, gravity, 80, 'wobble', 10, 3600],
             ['crab', 0.5, 450, gravity, 80, 'leftright', 9, 3600],
             ['bird', 2, 250, -gravity, 80, 'updown', 8, 7200],
             ['cactusL', 1, 460, gravity, 140, false, 4, 10800],
@@ -276,6 +276,18 @@ function addObstacle() {
                 targets: obstacle.body.velocity,
                 x: velX - 80,        // Move the object up by 50 pixels
                 ease: 'Sine.easeInOut',    // Smooth easing for up-and-down motion
+                duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
+                yoyo: true,                // Yoyo makes the object go back down after reaching the top
+                repeat: -1                 // Repeat indefinitely for continuous wobble
+            });
+        }
+        // Create a tween to make the object wobble up and down, or left and right
+        if (obstacles[obCh][5] === 'wobble') {
+            obstacle.setOrigin(0.5, 1);
+            this.tweens.add({
+                targets: obstacle,
+                angle: 10,        // Move the object up by 50 pixels
+                ease: 'Back.easeInOut',    // Smooth easing for up-and-down motion
                 duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
                 yoyo: true,                // Yoyo makes the object go back down after reaching the top
                 repeat: -1                 // Repeat indefinitely for continuous wobble
@@ -369,10 +381,10 @@ function playerCollisionByee(scene, player) {
     // Tween for bouncing player out of scene
     scene.tweens.add({
         targets: player,
-        y: player.y - config.height / 4,
-        duration: 500,
-        ease: 'Sine.easeInOut',
-        yoyo: true,
+        y: player.y + config.height,
+        duration: 1000,
+        ease: 'Back.easeIn',
+        // yoyo: true,
         repeat: 0
     });
 }

@@ -54,9 +54,10 @@ p {
     position: absolute;
     bottom: 20px;
     width: 100%;
-    display: flex;
+    display: none;
     justify-content: space-around;
     pointer-events: none; /* Prevents buttons from blocking game canvas touch */
+    display: none; /* start hidden, show if device has touch */
 }
 
 .mobile-controls button {
@@ -73,8 +74,8 @@ p {
 }
 
 /* Media query: Hide buttons on desktop */
-@media (min-width: 1600px) {
+@media only screen and (max-width: 767px) and (pointer: coarse) {
     .mobile-controls {
-        display: none;
+        display: flex;
     }
 }
