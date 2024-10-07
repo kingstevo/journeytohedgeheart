@@ -5,7 +5,7 @@
 
 
 /* to do:
-- work on mobile
+* work on mobile
 X scale to fit window size
 ? better collision detection
 ? trees in background
