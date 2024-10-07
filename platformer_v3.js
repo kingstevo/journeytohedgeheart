@@ -27,7 +27,7 @@ X reset gameclock on new game
 - high score
 */
 
-let dateOfMeetingInSeconds = new Date("2024-10-30T15:30:00");
+let dateOfMeetingInSeconds = new Date("2024-10-30T22:50:00");
 
 let platformSpeed = 1;
 let platToVelFactor = 60;
