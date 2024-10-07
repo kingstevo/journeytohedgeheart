@@ -5,16 +5,16 @@
 
 
 /* to do:
-- add sounds
 - max and min spacing for each ostacle type
 - more obstacles (platforms?)
 - high score
 ? better collision detection
 ? trees in background
 - first two obstacles don't kill if player hasn't moved
-- better winner sequence
 - more interesting background
 - walk along start button
+X better winner sequence
+X add sounds
 X work on mobile
 X scale to fit window size
 X speed up platform as game proceeds
@@ -56,6 +56,8 @@ let gameClock = 0;
 let scoreText;
 let buttonGroup;
 
+let playerLRSoundCooldown = 250; // Cooldown time in milliseconds
+let lastplayerLRSoundTime = 0; // Timestamp of the last time the sound played
 
 // Initialize Phaser game
 var config = {
@@ -97,12 +99,17 @@ function preload() {
     this.load.image('bird', 'assets/bird.png');
     this.load.image('cloud', 'assets/cloud.png');
     this.load.image('cyanHeart', 'assets/cyanHeart.png');
+    this.load.audio('obstacleHit', 'assets/sounds/obstacleHit.mp3');
+    this.load.audio('obstaclePass', 'assets/sounds/obstaclePass.mp3');
+    this.load.audio('playerJump', 'assets/sounds/playerJump.mp3');
+    this.load.audio('playerLR', 'assets/sounds/playerLR.mp3');
+    this.load.audio('winner', 'assets/sounds/winner.mp3');
 }
 
 function create() {
 
     sceneW = this.scale.width;
-    sceneH = this.scale.height; 
+    sceneH = this.scale.height;
 
     // set the boundaries of our game world
     this.physics.world.bounds.width = sceneW;
@@ -128,9 +135,6 @@ function create() {
     groundCollider.create(sceneW / 2, groundHeight - 25, 'tiles', 2).setDisplaySize(sceneW * 1.2, 0).refreshBody();
     this.physics.add.collider(player, groundCollider);
 
-        // Combine both keyboard and touch controls
-        setupControls.call(this);
-
     score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
 
     scoreText = this.add.text(20, sceneH - 40, 'Score: ' + convertSecondsIntoText(score), {
@@ -139,6 +143,9 @@ function create() {
         fontFamily: 'Arial'
     });
     scoreText.setScrollFactor(0);
+
+    // Combine both keyboard and touch controls
+    setupControls.call(this);
 
     if (gameState === 'before') {
         // show a play now button
@@ -169,6 +176,11 @@ function create() {
         loop: true                // Repeat this event indefinitely
     });
 
+    this.obstacleHitSound = this.sound.add('obstacleHit');
+    this.obstaclePassSound = this.sound.add('obstaclePass');
+    this.playerJumpSound = this.sound.add('playerJump');
+    this.playerLRSound = this.sound.add('playerLR', { volume: 0.2 });
+    this.winnerSound = this.sound.add('winner');
 }
 
 function startGame(scene, killButton) {
@@ -181,6 +193,7 @@ function startGame(scene, killButton) {
     platformSpeed = 2;
     score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
     obstaclesArray = [];
+    winner = false;
 
     if (killButton) {
         // Tween for fading in the button background
@@ -211,6 +224,7 @@ function countGameTime() {
     // increase platform speed and score multiples as the game progresses (every 20s)
     if ((gameClock > 0) && (gameClock % 20 === 0)) {
         platformSpeed += 0.5;
+        this.obstaclePassSound.setRate(this.obstaclePassSound.rate + 0.1);
     }
 }
 
@@ -382,6 +396,7 @@ function addButton(scene, buttonText) {
 function playerCollisionByee(scene, player) {
     player.setTint(0xff0000);  // Flash red to show game over
     player.body.setVelocity(0); // Stop player movement
+    scene.obstacleHitSound.play();
 
     // Tween for bouncing player out of scene
     scene.tweens.add({
@@ -391,6 +406,24 @@ function playerCollisionByee(scene, player) {
         ease: 'Back.easeIn',
         // yoyo: true,
         repeat: 0
+    });
+}
+
+function playerCollisionWinner(scene, player) {
+    player.setTint(0xfff700);  // Flash golden to show game over
+    player.body.setVelocity(0); // Stop player movement
+    scene.winnerSound.play();
+
+    scoreText.setText('Congratulations! You made it to Hedgeheart!');
+
+    // Tween for spinning player
+    scene.tweens.add({
+        targets: player,
+        y: player.y - 100,
+        duration: 200,
+        ease: 'Sine.easeIn',
+        yoyo: true,
+        repeat: -1
     });
 }
 
@@ -460,13 +493,15 @@ function showPassedCelebration(scene, obstacle) {
             scoreFlash.destroy(); // Destroy the text once the animation is complete
         }
     });
+
+    scene.obstaclePassSound.play();
 }
 
 function setupControls() {
     // Setup combined controls (keyboard and touch)
     // Keyboard controls (for desktop)
     cursors = this.input.keyboard.createCursorKeys();
-    
+
     // Left and right arrow keys
     cursors.left.on('down', () => inputState.left = true);
     cursors.left.on('up', () => inputState.left = false);
@@ -481,11 +516,11 @@ function setupControls() {
     cursors.space.on('down', () => inputState.jump = true);
     cursors.space.on('up', () => inputState.jump = false);
 
-        // down cursor bar for jumping
-        cursors.down.on('down', () => inputState.down = true);
-        cursors.down.on('up', () => inputState.down = false);
+    // down cursor bar for jumping
+    cursors.down.on('down', () => inputState.down = true);
+    cursors.down.on('up', () => inputState.down = false);
 
-// Setup touch controls for mobile
+    // Setup touch controls for mobile
 
     const leftButton = document.getElementById('left-btn');
     const rightButton = document.getElementById('right-btn');
@@ -521,19 +556,21 @@ function update() {
     {
         player.body.setVelocityX(-platformSpeed * platToVelFactor * 4.5); // move left
         player.flipX = false; // flip the sprite to the left
+        playerLRSoundWithCoolDown(this);
     }
     else if (inputState.right) // if the right arrow key is down
     {
         player.body.setVelocityX(platformSpeed * platToVelFactor * 3); // move right
         player.flipX = true; // use the original sprite looking to the right
+        playerLRSoundWithCoolDown(this);
     }
     if (inputState.jump && player.body.onFloor()) {
         player.body.setVelocityY(-1200); // jump up
+        this.playerJumpSound.play();
     }
     else if (inputState.down && !player.body.onFloor()) {
         player.body.setVelocityY(400); // pull jump down
     }
-    //  // }
 
     // Check if player passes each obstacle
     obstaclesArray.forEach((obstacle) => {
@@ -549,7 +586,7 @@ function update() {
     // convert score in seconds to days,hours, mins and seconds
     text = 'Time to Hedgeheart: ' + convertSecondsIntoText(score);
     if (config.physics.arcade.debug) text += ' GameClock: ' + gameClock + ' Platform Speed: ' + platformSpeed;
-        scoreText.setText(text);
+    scoreText.setText(text);
 
     if (score < 10 && winner == false) {
         // 10 second to the end add heart obstacle
@@ -557,6 +594,15 @@ function update() {
         addWinner.call(this);
     }
 
+}
+
+function playerLRSoundWithCoolDown(scene) {
+    let currentTime = scene.time.now;
+    // Check if the cooldown has passed before playing the sound
+    if (currentTime - lastplayerLRSoundTime > playerLRSoundCooldown) {
+        scene.playerLRSound.play();
+        lastplayerLRSoundTime = currentTime; // Update the last sound time
+    }
 }
 
 function convertSecondsIntoText(totalSeconds) {
@@ -576,9 +622,14 @@ function convertSecondsIntoText(totalSeconds) {
 function hitWinner() {
     gameState = 'after';
     this.physics.pause();  // End game on collision
-    playerCollisionByee(this, player);
-    ground.tilePositionX = 0; // Stop ground movement
-    scoreText.setText('WINNER! Final Score: ' + convertSecondsIntoText(score));
+    playerCollisionWinner(this, player);
+
+    playAgainButton = addButton(this, 'Play again?');
+
+    // On button click, restart the game
+    playAgainButton.on('pointerdown', () => {
+        startGame(this);
+    });
 }
 
 function addWinner() {
