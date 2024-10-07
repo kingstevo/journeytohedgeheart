@@ -136,7 +136,6 @@ node_modules/phaser/config/webpack.dist.config.js
 node_modules/phaser/config/webpack.fb.config.js
 node_modules/phaser/config/webpack.fb.dist.config.js
 node_modules/phaser/dist/phaser-arcade-physics.js
-node_modules/phaser/dist/phaser-arcade-physics.min.js
 node_modules/phaser/dist/phaser-ie9.js
 node_modules/phaser/dist/phaser-ie9.min.js
 node_modules/phaser/dist/phaser.esm.js

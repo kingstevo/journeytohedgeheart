@@ -49,10 +49,6 @@ p {
     border-radius: 5%; /* Optional: makes the image circular */
 }
 
-#gameCanvas {
-
-}
-
 /* Style for buttons */
 .mobile-controls {
     position: absolute;
@@ -73,6 +69,7 @@ p {
     pointer-events: auto; /* Re-enables pointer events for the buttons */
     opacity: 0.7;
     border: none;
+    touch-action: manipulation; /* allows for interactions like panning and scrolling but prevents double-tap zooming on the element. */
 }
 
 /* Media query: Hide buttons on desktop */
