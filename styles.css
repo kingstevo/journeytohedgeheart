@@ -51,6 +51,11 @@ p {
     height: 600px;
     display: flex;
     align-items: flex-end;
+
+    -webkit-user-select: none; /* For Safari and Chrome */
+    -moz-user-select: none; /* For Firefox */
+    -ms-user-select: none; /* For Internet Explorer/Edge */
+    user-select: none; /* Standard property */
 }
 
 /* Style for the header image */
