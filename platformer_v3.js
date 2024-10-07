@@ -1,4 +1,4 @@
-// Lover levels - journey to the hedgeheart
+// Journey to the Hedgeheart
 // a platform jumper inspired by the google chrome "no internet" game
 // but with graphics and gameplay influenced by my love for Cyan
 // based on https://gamedevacademy.org/how-to-make-a-mario-style-platformer-with-phaser-3/
@@ -6,25 +6,25 @@
 
 /* to do:
 * work on mobile
-X scale to fit window size
+- add sounds
+- max and min spacing for each ostacle type
+- more obstacles (platforms?)
+- high score
 ? better collision detection
 ? trees in background
-- max and min spacing for each ostacle type
 - first obstacle doesn't kill!
-- more obstacles (platforms?)
+- better winner sequence
+- more interesting background
+- walk along start button
+X scale to fit window size
 X speed up platform as game proceeds
 X increase scoring as game speeds up
 X fix jumping movement
-- add sounds
 X space to start, space to play again
 X better score display
-- better winner sequence
 X host online with domain
 X create logo, favicon, name
-- more interesting background
-- walk along start button
 X reset gameclock on new game
-- high score
 */
 
 let dateOfMeetingInSeconds = new Date("2024-10-30T22:50:00");
@@ -60,13 +60,14 @@ let buttonGroup;
 // Initialize Phaser game
 var config = {
     type: Phaser.AUTO,
+    parent: 'game-container',
     width: window.innerWidth,
     height: 600,
     scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
-        width: '100%',
-        height: '100%',
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTTOM,
+        //width: '100%',
+        //height: 400,
     },
     backgroundColor: '#87CEEB', // Light blue sky color
     physics: {
@@ -314,7 +315,7 @@ function hitObstacle(player, obstacle) {
     playerCollisionByee(this, player);
     ground.tilePositionX = 0; // Stop ground movement
     // stop tweening
-    scoreText.setText('Game Over! Only ' + convertSecondsIntoText(score) + ' to hedgeheart');
+    scoreText.setText('Journey Over! Only ' + convertSecondsIntoText(score) + ' to go to Hedgeheart');
 
     playAgainButton = addButton(this, 'Play again?');
 
@@ -542,7 +543,7 @@ function update() {
 
     // set the text to show the current score 
     // convert score in seconds to days,hours, mins and seconds
-    text = 'Time to hedgeheart: ' + convertSecondsIntoText(score);
+    text = 'Time to Hedgeheart: ' + convertSecondsIntoText(score);
     if (config.physics.arcade.debug) text += ' GameClock: ' + gameClock + ' Platform Speed: ' + platformSpeed;
         scoreText.setText(text);
 
