@@ -66,7 +66,7 @@ var config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
         width: '100%',
-        //height: '100%',
+        height: '100%',
     },
     backgroundColor: '#87CEEB', // Light blue sky color
     physics: {
@@ -96,7 +96,6 @@ function preload() {
     this.load.image('bird', 'assets/bird.png');
     this.load.image('cloud', 'assets/cloud.png');
     this.load.image('cyanHeart', 'assets/cyanHeart.png');
-    this.load.image('hedgeLogo', 'assets/hedgefavicon.png');
 }
 
 function create() {
@@ -127,14 +126,6 @@ function create() {
 
         // Combine both keyboard and touch controls
         setupControls.call(this);
-
-    hedgeLogo = this.physics.add.sprite(50,50, 'hedgeLogo'); // set to appear off screen to the right
-    hedgeLogo.displayWidth = 50;
-    hedgeLogo.scaleY = hedgeLogo.scaleX;
-    hedgeLogo.setScrollFactor(0);
-    hedgeLogo.setGravityY(-gravity);
-    hedgeLogo.setDepth(300);
-
 
     score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
 
