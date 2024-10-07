@@ -73,7 +73,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: { y: gravity },  // Gravity pulls the player down
-            debug: true
+            debug: false
         }
     },
     scene: {
