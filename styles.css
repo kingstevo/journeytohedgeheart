@@ -4,6 +4,8 @@ body {
     overflow: hidden;
     background: #87CEEB;
     font-family: Arial, sans-serif;
+    background: url('assets/skygroundxcf.png') no-repeat center center fixed; 
+    background-size: cover;
 }
 
 html {
@@ -43,10 +45,12 @@ p {
 
 #game-container {
     position: absolute;
-    bottom: 0;
+    bottom: 0px;
     left: 0;
     width: 100%;
-    height: 600px; /* Adjust the height as needed */
+    height: 600px;
+    display: flex;
+    align-items: flex-end;
 }
 
 /* Style for the header image */
@@ -86,4 +90,10 @@ p {
     .mobile-controls {
         display: flex;
     }
+
+    #game-container {
+        bottom: 120px;
+        height: auto;
+    }
+
 }

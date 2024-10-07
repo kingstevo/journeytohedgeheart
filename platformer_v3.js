@@ -5,17 +5,17 @@
 
 
 /* to do:
-* work on mobile
 - add sounds
 - max and min spacing for each ostacle type
 - more obstacles (platforms?)
 - high score
 ? better collision detection
 ? trees in background
-- first obstacle doesn't kill!
+- first two obstacles don't kill if player hasn't moved
 - better winner sequence
 - more interesting background
 - walk along start button
+X work on mobile
 X scale to fit window size
 X speed up platform as game proceeds
 X increase scoring as game speeds up
@@ -61,13 +61,13 @@ let buttonGroup;
 var config = {
     type: Phaser.AUTO,
     parent: 'game-container',
-    width: window.innerWidth,
+    width: 800,
     height: 600,
     scale: {
-        mode: Phaser.Scale.RESIZE,
-        autoCenter: Phaser.Scale.CENTER_BOTTOM,
-        //width: '100%',
-        //height: 400,
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
+        //width: window.innerWidth,
+        //height: '100%',
     },
     backgroundColor: '#87CEEB', // Light blue sky color
     physics: {
@@ -101,12 +101,15 @@ function preload() {
 
 function create() {
 
+    sceneW = this.scale.width;
+    sceneH = this.scale.height; 
+
     // set the boundaries of our game world
-    this.physics.world.bounds.width = config.width;
-    this.physics.world.bounds.height = config.height;
+    this.physics.world.bounds.width = sceneW;
+    this.physics.world.bounds.height = sceneH;
 
     // Add a scrolling ground using tileSprite
-    ground = this.add.tileSprite(config.width / 2, groundHeight, config.width, 70, 'tiles', 2);
+    ground = this.add.tileSprite(sceneW / 2, groundHeight, sceneW, 70, 'tiles', 2);
 
     // create the player sprite    
     player = this.physics.add.sprite(0, 0, 'hedgehog');
@@ -122,7 +125,7 @@ function create() {
 
     // Create a static ground collider for the player to stand on
     groundCollider = this.physics.add.staticGroup();
-    groundCollider.create(config.width / 2, groundHeight - 25, 'tiles', 2).setDisplaySize(config.width * 1.2, 0).refreshBody();
+    groundCollider.create(sceneW / 2, groundHeight - 25, 'tiles', 2).setDisplaySize(sceneW * 1.2, 0).refreshBody();
     this.physics.add.collider(player, groundCollider);
 
         // Combine both keyboard and touch controls
@@ -130,7 +133,7 @@ function create() {
 
     score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
 
-    scoreText = this.add.text(20, config.height - 40, 'Score: ' + convertSecondsIntoText(score), {
+    scoreText = this.add.text(20, sceneH - 40, 'Score: ' + convertSecondsIntoText(score), {
         fontSize: '20px',
         fill: '#ffffff',
         fontFamily: 'Arial'
@@ -245,7 +248,7 @@ function addObstacle() {
         // console.log("Random obstacle: ", obstacles[obCh])
 
         // create the obstacle sprite    
-        obstacle = this.physics.add.sprite(config.width + 50, obstacles[obCh][2], obstacles[obCh][0]); // set to appear off screen to the right
+        obstacle = this.physics.add.sprite(sceneW + 50, obstacles[obCh][2], obstacles[obCh][0]); // set to appear off screen to the right
         // obstaclesG.push(obstacle);
 
         obstacle.displayWidth = obstacles[obCh][4];
@@ -330,8 +333,8 @@ function addButton(scene, buttonText) {
     // Create a "Play Again" button
     buttonW = 200;
     buttonH = 80;
-    buttonX = config.width / 2 - buttonW / 2;
-    buttonY = config.height / 2 - buttonH / 2;
+    buttonX = sceneW / 2 - buttonW / 2;
+    buttonY = sceneH / 2 - buttonH / 2;
     // Draw the "Play Again" button background with rounded edges and raised look
     buttonBackground = scene.add.graphics();
     buttonBackground.fillStyle(0x222222, 0.3); // Grey color for the background
@@ -371,6 +374,7 @@ function addButton(scene, buttonText) {
         scene.input.setDefaultCursor('default');  // Reset the cursor back to default
     });
 
+    // scene.physics.add.collider(buttonGroup, player);
 
     return buttonGroup;
 }
@@ -382,7 +386,7 @@ function playerCollisionByee(scene, player) {
     // Tween for bouncing player out of scene
     scene.tweens.add({
         targets: player,
-        y: player.y + config.height,
+        y: player.y + sceneH,
         duration: 1000,
         ease: 'Back.easeIn',
         // yoyo: true,
@@ -408,7 +412,7 @@ function littleFluffyClouds() {
 
     // create the obstacle sprite
     randomHeight = Phaser.Math.Between(100, 350);
-    cloud = this.physics.add.sprite(config.width + 100, randomHeight, 'cloud'); // set to appear off screen to the right
+    cloud = this.physics.add.sprite(sceneW + 100, randomHeight, 'cloud'); // set to appear off screen to the right
 
     //randomSize = Phaser.Math.Between(100, 250); // bigger clouds at the back
     randomSize = 300 - (randomHeight * 0.5); // bigger clouds at the back
@@ -580,7 +584,7 @@ function hitWinner() {
 function addWinner() {
 
     // create the obstacle sprite    
-    obstacle = this.physics.add.sprite(config.width + 50, 350, 'cyanHeart'); // set to appear off screen to the right
+    obstacle = this.physics.add.sprite(sceneW + 50, 350, 'cyanHeart'); // set to appear off screen to the right
 
     obstacle.displayWidth = 600;
     obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
