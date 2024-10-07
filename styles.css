@@ -3,12 +3,67 @@ body {
     padding: 0;
     overflow: hidden;
     background: #87CEEB;
+    font-family: Arial, sans-serif;
+    line-height: 1.6; /* Improved readability */
+    padding: 20px;
+    color: #333; /* Dark gray text color for readability */
 }
 
 html {
     margin: 0;
     padding: 0;
     height: 100%;
+}
+
+h1 {
+    font-size: 2.5em; /* Large font size for emphasis */
+    font-weight: bold; /* Bold to make the header stand out */
+    color: #222; /* Slightly darker color for the header */
+    margin-bottom: 20px; /* Space below the header */
+    padding-bottom: 10px; /* Padding for a little breathing space */
+    border-bottom: 2px solid #ddd; /* Underline for visual separation */
+}
+
+p {
+    font-size: 1.1em; /* Slightly larger than default for better readability */
+    margin-bottom: 15px; /* Space between paragraphs */
+    padding: 10px 0; /* Top and bottom padding for breathing room */
+    color: #444; /* Medium gray color for a softer look */
+}
+
+.container {
+    max-width: 800px; /* Limit the width of the content */
+    margin: 0 auto; /* Center the content */
+    background-color: #fff; /* White background to separate from page background */
+    padding: 20px; /* Padding around the content */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for a modern look */
+    border-radius: 5px; /* Rounded corners for a softer look */
+    
+}
+
+.headerContent {
+    display: flex; /* Use flexbox to align items */
+    align-items: center; /* Vertically center the image and text */
+    gap: 15px; /* Space between the image and the heading */
+    margin-bottom: 20px; /* Space below the header section */
+}
+
+/* Style for the header image */
+.headerImage {
+    width: 80px; /* Set a fixed width for the image */
+    height: 80px; /* Set a fixed height for the image */
+    object-fit: cover; /* Maintain aspect ratio, crop if needed */
+    border-radius: 5%; /* Optional: makes the image circular */
+}
+
+#gameCanvas {
+    display: block; /* Ensures the canvas is a block element */
+    margin: 20px auto; /* Center the canvas with space above and below */
+    border: 2px solid #ddd; /* Border to visually separate the canvas */
+    background-color: #e9e9e9; /* Light gray background to make it stand out */
+    width: 100%; /* Responsive width to fit the container */
+    max-width: 760px; /* Ensure the canvas does not exceed the content width */
+    height: 400px; /* Fixed height for consistent gameplay area */
 }
 
 /* Style for buttons */
@@ -34,7 +89,7 @@ html {
 }
 
 /* Media query: Hide buttons on desktop */
-@media (min-width: 768px) {
+@media (min-width: 1600px) {
     .mobile-controls {
         display: none;
     }

@@ -8,7 +8,7 @@
 - work on mobile
 X scale to fit window size
 ? better collision detection
-- trees in background
+? trees in background
 - max and min spacing for each ostacle type
 - first obstacle doesn't kill!
 - more obstacles (platforms?)
@@ -17,7 +17,7 @@ X increase scoring as game speeds up
 X fix jumping movement
 - add sounds
 X space to start, space to play again
-- better score display
+X better score display
 - better winner sequence
 - host online with domain
 - create logo, favicon, name
@@ -73,7 +73,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: { y: gravity },  // Gravity pulls the player down
-            debug: false
+            debug: true
         }
     },
     scene: {
@@ -311,7 +311,7 @@ function hitObstacle(player, obstacle) {
     playerCollisionByee(this, player);
     ground.tilePositionX = 0; // Stop ground movement
     // stop tweening
-    scoreText.setText('Game Over! Final Score: ' + convertSecondsIntoText(score));
+    scoreText.setText('Game Over! Only ' + convertSecondsIntoText(score) + ' to hedgeheart');
 
     playAgainButton = addButton(this, 'Play again?');
 
@@ -539,9 +539,9 @@ function update() {
 
     // set the text to show the current score 
     // convert score in seconds to days,hours, mins and seconds
-    scoreText.setText('Time to love: ' + convertSecondsIntoText(score) +
-        ' GameClock: ' + gameClock +
-        ' Platform Speed: ' + platformSpeed);
+    text = 'Time to hedgeheart: ' + convertSecondsIntoText(score);
+    if (config.physics.arcade.debug) text += ' GameClock: ' + gameClock + ' Platform Speed: ' + platformSpeed;
+        scoreText.setText(text);
 
     if (score < 10 && winner == false) {
         // 10 second to the end add heart obstacle
