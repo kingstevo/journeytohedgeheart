@@ -7,6 +7,8 @@
 /* to do:
 - max and min spacing for each ostacle type
 - more obstacles (platforms?)
+- obstacle clusters (CACTUS CLUSTERS!)
+- collect apples
 - high score
 ? better collision detection
 ? trees in background
@@ -254,33 +256,71 @@ function addObstacle() {
             ['bird', 2, 250, -gravity, 80, 'updown', 8, 7200],
             ['cactusL', 1, 460, gravity, 140, false, 4, 10800],
             ['cactusS', 1, 450, gravity, 80, false, 5, 3600],
+            ['cactusCluster', 1, 450, gravity, 80, false, 5, 18000],
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
         let obCh = Phaser.Math.Between(0, obstacles.length - 1);
 
-        // console.log("Random obstacle: ", obstacles[obCh])
+        console.log("Random obstacle: ", obstacles[obCh]);
 
-        // create the obstacle sprite    
-        obstacle = this.physics.add.sprite(sceneW + 50, obstacles[obCh][2], obstacles[obCh][0]); // set to appear off screen to the right
-        // obstaclesG.push(obstacle);
+        obstacleContainer = this.add.container(sceneW + 50, obstacles[obCh, 2]);
+        let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
 
-        obstacle.displayWidth = obstacles[obCh][4];
-        obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
+        // create the obstacle sprite
+        if (obstacles[obCh][0] === 'cactusCluster') {
+
+            cactus1 = this.physics.add.sprite(0, 0, 'cactusS');
+            cactus1.displayWidth = 80;
+            cactus1.scaleY = cactus1.scaleX;
+
+            // Set gravity and horizontal velocity to scroll the obstacle from right to left
+            cactus1.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
+            cactus1.body.setVelocityX(velX);
+
+            cactus2 = this.physics.add.sprite(40, 0, 'cactusL');
+            cactus2.displayWidth = 140;
+            cactus2.scaleY = cactus2.scaleX;
+
+            // Set gravity and horizontal velocity to scroll the obstacle from right to left
+            cactus2.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
+            cactus2.body.setVelocityX(velX);
+
+            cactus3 = this.physics.add.sprite(80, 0, 'cactusS');
+            cactus3.displayWidth = 80;
+            cactus3.scaleY = cactus3.scaleX;
+
+            // Set gravity and horizontal velocity to scroll the obstacle from right to left
+            cactus3.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
+            cactus3.body.setVelocityX(velX);
+
+            // add to container
+            obstacleContainer.add([cactus1, cactus2, cactus3]);
+            // cactus3.setDepth(1);
+
+        } else {
+            obstacle = this.physics.add.sprite(0, 0, obstacles[obCh][0]); // set to appear off screen to the right
+            obstacle.displayWidth = obstacles[obCh][4];
+            obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
+
+            // Set gravity and horizontal velocity to scroll the obstacle from right to left
+            obstacle.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
+            let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
+            obstacle.body.setVelocityX(velX);
+
+            // add to container
+            obstacleContainer.add([obstacle]);
+
+        }
 
         // Place the obstacles in front of the background
-        obstacle.setDepth(obstacles[obCh][6]); // Depth of 1 puts it in front of the background (which is at 0)
-
-        // Set gravity and horizontal velocity to scroll the obstacle from right to left
-        obstacle.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
-        let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
-        obstacle.body.setVelocityX(velX);
+        obstacleContainer.setDepth(obstacles[obCh][6]); // Depth of 1 puts it in front of the background (which is at 0)
 
         // Create a tween to make the object wobble up and down, or left and right
         if (obstacles[obCh][5] === 'updown') {
             this.tweens.add({
-                targets: obstacle,
-                y: obstacle.y - 40,        // Move the object up by 50 pixels
+                targets: obstacleContainer,
+                y: obstacleContainer.y - 40,        // Move the object up by 50 pixels
                 ease: 'Sine.easeInOut',    // Smooth easing for up-and-down motion
                 duration: 500,             // Duration of the wobble (500 ms up, 500 ms down)
                 yoyo: true,                // Yoyo makes the object go back down after reaching the top
@@ -291,7 +331,7 @@ function addObstacle() {
         // Create a tween to make the object wobble up and down, or left and right
         if (obstacles[obCh][5] === 'leftright') {
             this.tweens.add({
-                targets: obstacle.body.velocity,
+                targets: obstacleContainer.body.velocity,
                 x: velX - 80,        // Move the object up by 50 pixels
                 ease: 'Sine.easeInOut',    // Smooth easing for up-and-down motion
                 duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
@@ -301,9 +341,9 @@ function addObstacle() {
         }
         // Create a tween to make the object wobble up and down, or left and right
         if (obstacles[obCh][5] === 'wobble') {
-            obstacle.setOrigin(0.5, 1);
+            obstacleContainer.setOrigin(0.5, 1);
             this.tweens.add({
-                targets: obstacle,
+                targets: obstacleContainer,
                 angle: 10,        // Move the object up by 50 pixels
                 ease: 'Back.easeInOut',    // Smooth easing for up-and-down motion
                 duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
@@ -313,14 +353,14 @@ function addObstacle() {
         }
 
         // add collision handler
-        this.physics.add.collider(groundCollider, obstacle);
-        this.physics.add.collider(player, obstacle, hitObstacle, null, this);
+        this.physics.add.collider(groundCollider, obstacleContainer);
+        this.physics.add.collider(player, obstacleContainer, hitObstacle, null, this);
 
-        obstacle.passed = false;  // Add a custom flag to track if the obstacle has been passed
+        obstacleContainer.passed = false;  // Add a custom flag to track if the obstacle has been passed
 
-        obstacle.score = obstacles[obCh][7] * platformSpeed;
+        obstacleContainer.score = obstacles[obCh][7] * platformSpeed;
 
-        obstaclesArray.push(obstacle);
+        obstaclesArray.push(obstacleContainer);
 
     }
     addObstacleWithRandomDelay.call(this);
