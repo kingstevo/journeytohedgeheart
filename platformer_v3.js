@@ -10,6 +10,7 @@
 - obstacle clusters (CACTUS CLUSTERS!)
 - collect apples
 - high score
+- sound off button
 ? better collision detection
 ? trees in background
 - first two obstacles don't kill if player hasn't moved
@@ -78,7 +79,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: { y: gravity },  // Gravity pulls the player down
-            debug: false
+            debug: true
         }
     },
     scene: {
@@ -100,6 +101,7 @@ function preload() {
     this.load.image('cactusS', 'assets/cactus.png');
     this.load.image('bird', 'assets/bird.png');
     this.load.image('cloud', 'assets/cloud.png');
+    this.load.image('eagle', 'assets/eagle.png');
     this.load.image('cyanHeart', 'assets/cyanHeart.png');
     this.load.audio('obstacleHit', 'assets/sounds/obstacleHit.mp3');
     this.load.audio('obstaclePass', 'assets/sounds/obstaclePass.mp3');
@@ -234,7 +236,8 @@ function addObstacleWithRandomDelay() {
 
     // add obstacles with a random delay related to the platfrom speed
     // (higher platform speed, more frequent obstacles)
-    randomDelay = Phaser.Math.Between(1 / platformSpeed * 2000, 1 / platformSpeed * 10000);
+    randomDelay = Phaser.Math.Between(1 / platformSpeed * 500, 1 / platformSpeed * 5000);
+    // randomDelay = Phaser.Math.Between(1 / platformSpeed * 2000, 1 / platformSpeed * 10000);
 
     this.time.addEvent({
         delay: randomDelay,
@@ -252,67 +255,61 @@ function addObstacle() {
         // Obstacle array: name, speed factor, starting height, gravity, width, wobble, depth, score (seconds)
         let obstacles = [
             ['flamingo', 1.5, 450, gravity, 80, 'wobble', 10, 3600],
-            ['crab', 0.5, 450, gravity, 80, 'leftright', 9, 3600],
-            ['bird', 2, 250, -gravity, 80, 'updown', 8, 7200],
-            ['cactusL', 1, 460, gravity, 140, false, 4, 10800],
-            ['cactusS', 1, 450, gravity, 80, false, 5, 3600],
+        //    ['crab', 0.5, 450, gravity, 80, 'leftright', 9, 3600],
+        //    ['bird', 2, 250, -gravity, 80, 'updown', 8, 7200],
+        //    ['cactusL', 1, 460, gravity, 140, false, 4, 10800],
+        //    ['cactusS', 1, 450, gravity, 80, false, 5, 3600],
             ['cactusCluster', 1, 450, gravity, 80, false, 5, 18000],
+            // ['eagle', 4, 150, -gravity, 100, 'divebomb', 11, 24000]
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
         let obCh = Phaser.Math.Between(0, obstacles.length - 1);
-
+  
         console.log("Random obstacle: ", obstacles[obCh]);
 
-        obstacleContainer = this.add.container(sceneW + 50, obstacles[obCh, 2]);
-        let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
-
+        obstacleContainer = this.add.container(sceneW - 50, obstacles[obCh][2]); // set to appear off screen to the right
+        this.physics.world.enable(obstacleContainer);
+        
+        // let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
+        
         // create the obstacle sprite
         if (obstacles[obCh][0] === 'cactusCluster') {
-
-            cactus1 = this.physics.add.sprite(0, 0, 'cactusS');
-            cactus1.displayWidth = 80;
-            cactus1.scaleY = cactus1.scaleX;
-
-            // Set gravity and horizontal velocity to scroll the obstacle from right to left
-            cactus1.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
-            cactus1.body.setVelocityX(velX);
-
-            cactus2 = this.physics.add.sprite(40, 0, 'cactusL');
+            
+            cactus2 = this.add.sprite(55, -40, 'cactusL');
             cactus2.displayWidth = 140;
             cactus2.scaleY = cactus2.scaleX;
-
-            // Set gravity and horizontal velocity to scroll the obstacle from right to left
-            cactus2.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
-            cactus2.body.setVelocityX(velX);
-
-            cactus3 = this.physics.add.sprite(80, 0, 'cactusS');
+            
+            cactus1 = this.add.sprite(0, 0, 'cactusS');
+            cactus1.displayWidth = 80;
+            cactus1.scaleY = cactus1.scaleX;
+            
+            cactus3 = this.add.sprite(110, 0, 'cactusS');
             cactus3.displayWidth = 80;
             cactus3.scaleY = cactus3.scaleX;
-
-            // Set gravity and horizontal velocity to scroll the obstacle from right to left
-            cactus3.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
-            cactus3.body.setVelocityX(velX);
-
+            
+            // obstacleContainer.setSize(140, 180);
             // add to container
-            obstacleContainer.add([cactus1, cactus2, cactus3]);
-            // cactus3.setDepth(1);
-
+            obstacleContainer.add([cactus2, cactus1, cactus3]);
+            
         } else {
-            obstacle = this.physics.add.sprite(0, 0, obstacles[obCh][0]); // set to appear off screen to the right
+            obstacle = this.physics.add.sprite(0, 0, obstacles[obCh][0]); 
             obstacle.displayWidth = obstacles[obCh][4];
             obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
-
-            // Set gravity and horizontal velocity to scroll the obstacle from right to left
-            obstacle.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
-            let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
-            obstacle.body.setVelocityX(velX);
-
+                        
             // add to container
             obstacleContainer.add([obstacle]);
-
+            
         }
-
+        
+        obstacleContainer.setSize(obstacle.displayWidth, obstacle.displayHeight);
+        console.log(obstacle.displayWidth, obstacle.displayHeight)
+        
+        // Set gravity and horizontal velocity to scroll the obstacle from right to left
+        obstacleContainer.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
+        let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
+        obstacleContainer.body.setVelocityX(velX);
+        
         // Place the obstacles in front of the background
         obstacleContainer.setDepth(obstacles[obCh][6]); // Depth of 1 puts it in front of the background (which is at 0)
 
@@ -341,14 +338,25 @@ function addObstacle() {
         }
         // Create a tween to make the object wobble up and down, or left and right
         if (obstacles[obCh][5] === 'wobble') {
-            obstacleContainer.setOrigin(0.5, 1);
+            // obstacleContainer.setOrigin(0.5, 1);
             this.tweens.add({
-                targets: obstacleContainer,
+                targets: obstacleContainer.body,
                 angle: 10,        // Move the object up by 50 pixels
                 ease: 'Back.easeInOut',    // Smooth easing for up-and-down motion
                 duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
                 yoyo: true,                // Yoyo makes the object go back down after reaching the top
                 repeat: -1                 // Repeat indefinitely for continuous wobble
+            });
+        }
+        // Create a tween to make the object wobble up and down, or left and right
+        if (obstacles[obCh][5] === 'divebomb') {
+            this.tweens.add({
+                targets: obstacleContainer,
+                y: obstacleContainer.y + 200,        // Move the object up by 50 pixels
+                ease: 'Back.easeIn',    // Smooth easing for up-and-down motion
+                duration: 1000,             // Duration of the wobble (500 ms up, 500 ms down)
+                yoyo: false,                // Yoyo makes the object go back down after reaching the top
+                repeat: false                 // Repeat indefinitely for continuous wobble
             });
         }
 
@@ -430,7 +438,7 @@ function addButton(scene, buttonText) {
 
     // scene.physics.add.collider(buttonGroup, player);
 
-    return buttonGroup;
+       return buttonGroup;
 }
 
 function playerCollisionByee(scene, player) {
