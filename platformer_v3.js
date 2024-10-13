@@ -252,125 +252,105 @@ function addObstacle() {
     if (gameState === 'during') {
         let second = 3600;
 
-        // Obstacle array: name, speed factor, starting height, gravity, width, wobble, depth, score (seconds)
+        // Obstacle array: name, speed factor, starting height, gravity, width, x-offset, wobble, depth, score (seconds)
         let obstacles = [
-            ['flamingo', 1.5, 450, gravity, 80, 'wobble', 10, 3600],
-        //    ['crab', 0.5, 450, gravity, 80, 'leftright', 9, 3600],
-        //    ['bird', 2, 250, -gravity, 80, 'updown', 8, 7200],
-        //    ['cactusL', 1, 460, gravity, 140, false, 4, 10800],
-        //    ['cactusS', 1, 450, gravity, 80, false, 5, 3600],
-            // ['cactusCluster', 1, 450, gravity, 80, false, 5, 18000],
-            // ['eagle', 4, 150, -gravity, 100, 'divebomb', 11, 24000]
+            ['flamingo', 1.5, 450, gravity, 80, 0, 'wobble', 10, 3600],
+            //    ['crab', 0.5, 450, gravity, 80, 0, 'leftright', 9, 3600],
+            //    ['bird', 2, 250, -gravity, 80, 0, 'updown', 8, 7200],
+            //    ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800],
+            //    ['cactusS', 1, 450, gravity, 80, 0, false, 5, 3600],
+            // ['cactusCluster', 1, 450, gravity, 80, 0, false, 5, 18000],
+            // ['eagle', 4, 150, -gravity, 100, 0, 'divebomb', 11, 24000]
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
         let obCh = Phaser.Math.Between(0, obstacles.length - 1);
-  
-        console.log("Random obstacle: ", obstacles[obCh]);
+        let chosenObstacle = obstacles[obCh];
 
-        obstacleContainer = this.add.container(sceneW/2 - 50, obstacles[obCh][2]); // set to appear off screen to the right
-        this.physics.world.enable(obstacleContainer);
-        
-        // let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
-        
-        // create the obstacle sprite
-        if (obstacles[obCh][0] === 'cactusCluster') {
-            
-            cactus2 = this.add.sprite(55, -40, 'cactusL');
-            cactus2.displayWidth = 140;
-            cactus2.scaleY = cactus2.scaleX;
-            
-            cactus1 = this.add.sprite(0, 0, 'cactusS');
-            cactus1.displayWidth = 80;
-            cactus1.scaleY = cactus1.scaleX;
-            
-            cactus3 = this.add.sprite(110, 0, 'cactusS');
-            cactus3.displayWidth = 80;
-            cactus3.scaleY = cactus3.scaleX;
-            
-            // obstacleContainer.setSize(140, 180);
-            // add to container
-            obstacleContainer.add([cactus2, cactus1, cactus3]);
-            
+        if (chosenObstacle[0] === 'cactusCluster') {
+            renderObstacle(['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800]);
+            renderObstacle(['cactusS', 1, 450, gravity, 80, -40, false, 5, 3600]);
+            renderObstacle(['cactusS', 1, 450, gravity, 80, 40, false, 5, 3600]);
         } else {
-            obstacle = this.add.sprite(0, 0, obstacles[obCh][0]); 
-            obstacle.displayWidth = obstacles[obCh][4];
-            obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
-                        
-            // add to container
-            obstacleContainer.add([obstacle]);
-            
+            renderObstacle(this,chosenObstacle);
         }
-        
-        obstacleContainer.body.setSize(obstacle.displayWidth, obstacle.displayHeight);
-        
-        // Set gravity and horizontal velocity to scroll the obstacle from right to left
-        obstacleContainer.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
-        let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
-        // obstacleContainer.body.setVelocityX(velX);
-        
-        // Place the obstacles in front of the background
-        obstacleContainer.setDepth(obstacles[obCh][6]); // Depth of 1 puts it in front of the background (which is at 0)
 
+        addObstacleWithRandomDelay.call(this);
+    }
+}
+
+function renderObstacle(scene,obs) {
+    console.log("Here! Chosen obstacle: ", obs);
+    // create the obstacle sprite
+    let obstacle = scene.physics.add.sprite(obs[2], sceneW + 50 + obs[5], obs[0]);
+    obstacle.displayWidth = obs[4];
+    obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
+
+    // Set gravity and horizontal velocity to scroll the obstacle from right to left
+    obstacle.body.setGravityY(obs[3]);  // gravity applied to each obstacle
+    let velX = -platformSpeed * platToVelFactor * obs[1]
+
+    // Place the obstacles in front of the background
+    obstacle.setDepth(obs[7]); // Depth of 1 puts it in front of the background (which is at 0)
+
+    switch (obs[6]) {
         // Create a tween to make the object wobble up and down, or left and right
-        if (obstacles[obCh][5] === 'updown') {
-            this.tweens.add({
-                targets: obstacleContainer,
-                y: obstacleContainer.y - 40,        // Move the object up by 50 pixels
+        case 'updown':
+            scene.tweens.add({
+                targets: obstacle,
+                y: obstacle.y - 40,        // Move the object up by 50 pixels
                 ease: 'Sine.easeInOut',    // Smooth easing for up-and-down motion
                 duration: 500,             // Duration of the wobble (500 ms up, 500 ms down)
                 yoyo: true,                // Yoyo makes the object go back down after reaching the top
                 repeat: -1                 // Repeat indefinitely for continuous wobble
             });
-        }
+            break;
 
         // Create a tween to make the object wobble up and down, or left and right
-        if (obstacles[obCh][5] === 'leftright') {
-            this.tweens.add({
-                targets: obstacleContainer.body.velocity,
+        case 'leftright':
+            scene.tweens.add({
+                targets: obstacle.body.velocity,
                 x: velX - 80,        // Move the object up by 50 pixels
                 ease: 'Sine.easeInOut',    // Smooth easing for up-and-down motion
                 duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
                 yoyo: true,                // Yoyo makes the object go back down after reaching the top
                 repeat: -1                 // Repeat indefinitely for continuous wobble
             });
-        }
+            break;
         // Create a tween to make the object wobble up and down, or left and right
-        if (obstacles[obCh][5] === 'wobble') {
-            // obstacleContainer.setOrigin(0.5, 1);
-            this.tweens.add({
-                targets: obstacleContainer.body,
+        case 'wobble':
+            obstacle.setOrigin(0.5, 1);
+            scene.tweens.add({
+                targets: obstacle.body,
                 angle: 10,        // Move the object up by 50 pixels
                 ease: 'Back.easeInOut',    // Smooth easing for up-and-down motion
                 duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
                 yoyo: true,                // Yoyo makes the object go back down after reaching the top
                 repeat: -1                 // Repeat indefinitely for continuous wobble
             });
-        }
+            break;
         // Create a tween to make the object wobble up and down, or left and right
-        if (obstacles[obCh][5] === 'divebomb') {
-            this.tweens.add({
-                targets: obstacleContainer,
-                y: obstacleContainer.y + 200,        // Move the object up by 50 pixels
+        case 'divebomb':
+            scene.tweens.add({
+                targets: obstacle,
+                y: obstacle.y + 200,        // Move the object up by 50 pixels
                 ease: 'Back.easeIn',    // Smooth easing for up-and-down motion
                 duration: 1000,             // Duration of the wobble (500 ms up, 500 ms down)
                 yoyo: false,                // Yoyo makes the object go back down after reaching the top
                 repeat: false                 // Repeat indefinitely for continuous wobble
             });
-        }
-
-        // add collision handler
-        this.physics.add.collider(groundCollider, obstacleContainer);
-        this.physics.add.collider(player, obstacleContainer, hitObstacle, null, this);
-
-        obstacleContainer.passed = false;  // Add a custom flag to track if the obstacle has been passed
-
-        obstacleContainer.score = obstacles[obCh][7] * platformSpeed;
-
-        obstaclesArray.push(obstacleContainer);
-
+            break;
     }
-    addObstacleWithRandomDelay.call(this);
+
+    // add collision handler
+    scene.physics.add.collider(groundCollider, obstacle);
+    scene.physics.add.collider(player, obstacle, hitObstacle, null, scene);
+
+    obstacle.passed = false;  // Add a custom flag to track if the obstacle has been passed
+
+    obstacle.score = obs[8] * platformSpeed;
+
+    obstaclesArray.push(obstacle);
 }
 
 function hitObstacle(player, obstacle) {
@@ -437,7 +417,7 @@ function addButton(scene, buttonText) {
 
     // scene.physics.add.collider(buttonGroup, player);
 
-       return buttonGroup;
+    return buttonGroup;
 }
 
 function playerCollisionByee(scene, player) {
