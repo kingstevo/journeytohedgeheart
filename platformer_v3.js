@@ -259,7 +259,7 @@ function addObstacle() {
         //    ['bird', 2, 250, -gravity, 80, 'updown', 8, 7200],
         //    ['cactusL', 1, 460, gravity, 140, false, 4, 10800],
         //    ['cactusS', 1, 450, gravity, 80, false, 5, 3600],
-            ['cactusCluster', 1, 450, gravity, 80, false, 5, 18000],
+            // ['cactusCluster', 1, 450, gravity, 80, false, 5, 18000],
             // ['eagle', 4, 150, -gravity, 100, 'divebomb', 11, 24000]
         ];
 
@@ -268,7 +268,7 @@ function addObstacle() {
   
         console.log("Random obstacle: ", obstacles[obCh]);
 
-        obstacleContainer = this.add.container(sceneW - 50, obstacles[obCh][2]); // set to appear off screen to the right
+        obstacleContainer = this.add.container(sceneW/2 - 50, obstacles[obCh][2]); // set to appear off screen to the right
         this.physics.world.enable(obstacleContainer);
         
         // let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
@@ -293,7 +293,7 @@ function addObstacle() {
             obstacleContainer.add([cactus2, cactus1, cactus3]);
             
         } else {
-            obstacle = this.physics.add.sprite(0, 0, obstacles[obCh][0]); 
+            obstacle = this.add.sprite(0, 0, obstacles[obCh][0]); 
             obstacle.displayWidth = obstacles[obCh][4];
             obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
                         
@@ -302,13 +302,12 @@ function addObstacle() {
             
         }
         
-        obstacleContainer.setSize(obstacle.displayWidth, obstacle.displayHeight);
-        console.log(obstacle.displayWidth, obstacle.displayHeight)
+        obstacleContainer.body.setSize(obstacle.displayWidth, obstacle.displayHeight);
         
         // Set gravity and horizontal velocity to scroll the obstacle from right to left
         obstacleContainer.body.setGravityY(obstacles[obCh][3]);  // gravity applied to each obstacle
         let velX = -platformSpeed * platToVelFactor * obstacles[obCh][1]
-        obstacleContainer.body.setVelocityX(velX);
+        // obstacleContainer.body.setVelocityX(velX);
         
         // Place the obstacles in front of the background
         obstacleContainer.setDepth(obstacles[obCh][6]); // Depth of 1 puts it in front of the background (which is at 0)
