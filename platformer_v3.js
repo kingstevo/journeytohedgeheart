@@ -263,11 +263,7 @@ function addObstacle() {
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
-
-
-numberOfObsToChooseFrom = Math.min(obstacles.length, Math.round(platformSpeed)-1);
-console.log(numberOfObsToChooseFrom);
-
+        let numberOfObsToChooseFrom = Math.min(obstacles.length, Math.round(platformSpeed) - 1);
         let obCh = Phaser.Math.Between(0, numberOfObsToChooseFrom - 1);
         let chosenObstacle = obstacles[obCh];
 
