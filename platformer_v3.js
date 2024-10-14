@@ -79,7 +79,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: { y: gravity },  // Gravity pulls the player down
-            debug: true
+            debug: false
         }
     },
     scene: {
@@ -237,7 +237,7 @@ function addObstacleWithRandomDelay() {
     // add obstacles with a random delay related to the platfrom speed
     // (higher platform speed, more frequent obstacles)
     // randomDelay = Phaser.Math.Between(1 / platformSpeed * 500, 1 / platformSpeed * 5000);
-    randomDelay = Phaser.Math.Between(1 / platformSpeed * 2000, 1 / platformSpeed * 10000);
+    randomDelay = Phaser.Math.Between(1 / platformSpeed * 4000, 1 / platformSpeed * 8000);
     this.time.addEvent({
         delay: randomDelay,
         callback: addObstacle,
@@ -253,11 +253,11 @@ function addObstacle() {
         // Obstacle array: 0. name, 1. speed factor, 2. starting height, 
         // 3. gravity, 4. width, 5. x-offset, 6. wobble, 7. depth, 8. score (seconds)
         let obstacles = [
+            ['cactusS', 1, 450, gravity, 80, 0, false, 5, 3600],
             ['flamingo', 1.5, 450, gravity, 80, 0, 'wobble', 10, 3600],
             ['crab', 0.5, 450, gravity, 80, 0, 'leftright', 9, 3600],
-            ['bird', 2, 250, -gravity, 80, 0, 'updown', 8, 7200],
             ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800],
-            ['cactusS', 1, 450, gravity, 80, 0, false, 5, 3600],
+            ['bird', 2, 250, -gravity, 80, 0, 'updown', 8, 7200],
             ['cactusCluster', 1, 450, gravity, 80, 0, false, 5, 18000],
             ['eagle', 4, 150, -gravity, 100, 0, 'divebomb', 11, 1000]
         ];
@@ -265,9 +265,10 @@ function addObstacle() {
         // Randomly select an obstacle - change this to add more obstacles over time
 
 
+numberOfObsToChooseFrom = Math.min(obstacles.length, Math.round(platformSpeed)-1);
+console.log(numberOfObsToChooseFrom);
 
-        
-        let obCh = Phaser.Math.Between(0, obstacles.length - 1);
+        let obCh = Phaser.Math.Between(0, numberOfObsToChooseFrom - 1);
         let chosenObstacle = obstacles[obCh];
 
         if (chosenObstacle[0] === 'cactusCluster') {
