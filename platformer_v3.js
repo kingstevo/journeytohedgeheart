@@ -250,7 +250,8 @@ function addObstacle() {
     if (gameState === 'during') {
         let second = 3600;
 
-        // Obstacle array: name, speed factor, starting height, gravity, width, x-offset, wobble, depth, score (seconds)
+        // Obstacle array: 0. name, 1. speed factor, 2. starting height, 
+        // 3. gravity, 4. width, 5. x-offset, 6. wobble, 7. depth, 8. score (seconds)
         let obstacles = [
             ['flamingo', 1.5, 450, gravity, 80, 0, 'wobble', 10, 3600],
             ['crab', 0.5, 450, gravity, 80, 0, 'leftright', 9, 3600],
@@ -262,10 +263,12 @@ function addObstacle() {
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
+
+
+
+        
         let obCh = Phaser.Math.Between(0, obstacles.length - 1);
         let chosenObstacle = obstacles[obCh];
-
-        // console.log(chosenObstacle);
 
         if (chosenObstacle[0] === 'cactusCluster') {
             renderObstacle(this, ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800]);
