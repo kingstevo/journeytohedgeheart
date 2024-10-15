@@ -5,9 +5,10 @@
 
 
 /* to do:
-- max and min spacing for each ostacle type
+X max and min spacing for each ostacle type
+X when platform speed changes, update speed of all visible objects
 - more obstacles (platforms?)
-- obstacle clusters (CACTUS CLUSTERS!)
+X obstacle clusters (CACTUS CLUSTERS!)
 - collect apples
 - high score
 - sound off button
@@ -36,6 +37,7 @@ let platformSpeed = 1;
 let platToVelFactor = 60;
 let groundHeight = 565;
 let gravity = 2000;
+let gameSpeedUpInterval = 30; //seconds
 
 let fontFamily = 'Arial';
 
@@ -226,7 +228,7 @@ function countGameTime() {
     }
 
     // increase platform speed and score multiples as the game progresses (every 20s)
-    if ((gameClock > 0) && (gameClock % 20 === 0)) {
+    if ((gameClock > 0) && (gameClock % gameSpeedUpInterval === 0)) {
         platformSpeed += 0.5;
         this.obstaclePassSound.setRate(this.obstaclePassSound.rate + 0.1);
     }
@@ -281,6 +283,8 @@ function addObstacle() {
 function renderObstacle(scene, obs) {
     // create the obstacle sprite
     obstacle = scene.physics.add.sprite(sceneW + 50 + obs[5], obs[2], obs[0]);
+
+    obstacle.parameters = obs;
 
     obstacle.displayWidth = obs[4];
     obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
@@ -599,6 +603,15 @@ function update() {
             score -= obstacle.score;
             showPassedCelebration(this, obstacle);
             obstacle.passed = true;  // Mark the obstacle as passed to avoid counting it again
+        }
+        
+        if (obstacle.x > 0) {
+            // update speed of obstacles if platform speed changes
+            let velX = -platformSpeed * platToVelFactor * obstacle.parameters[1]
+            if ( velX != obstacle.body.velocity.x )
+            {
+             obstacle.body.setVelocityX(velX)
+            }
         }
     });
 
