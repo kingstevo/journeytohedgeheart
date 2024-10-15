@@ -5,6 +5,7 @@
 
 
 /* to do:
+- game width overlapping text on mid screen sizes
 X max and min spacing for each ostacle type
 X when platform speed changes, update speed of all visible objects
 - more obstacles (platforms?)
@@ -39,7 +40,7 @@ let groundHeight = 565;
 let gravity = 2000;
 let gameSpeedUpInterval = 30; //seconds
 
-let fontFamily = 'Arial';
+let fontFamily = 'Nunito';
 
 let gameState = 'before'; // what state is the game in? Just started? In play? Game over? before / during / after
 let winner = false;
@@ -146,12 +147,15 @@ function create() {
     scoreText = this.add.text(20, sceneH - 40, 'Score: ' + convertSecondsIntoText(score), {
         fontSize: '20px',
         fill: '#ffffff',
-        fontFamily: 'Arial'
+        fontFamily: fontFamily
     });
     scoreText.setScrollFactor(0);
 
     // Combine both keyboard and touch controls
     setupControls.call(this);
+
+    // add sound mute button
+    // soundMute = addButton(this, 'Mute');
 
     if (gameState === 'before') {
         // show a play now button
@@ -382,7 +386,7 @@ function addButton(scene, buttonText) {
 
     // Create the text on top of the rounded button
     button = scene.add.text(buttonW / 2, buttonH / 2, buttonText, {
-        fontSize: '32px',
+        fontSize: '28px',
         fontFamily: fontFamily,
         fill: '#ffffff' // White text color
     }).setOrigin(0.5); // Center the text on the button

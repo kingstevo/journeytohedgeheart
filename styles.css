@@ -3,7 +3,7 @@ body {
     padding: 0;
     overflow: hidden;
     background: #87CEEB;
-    font-family: Arial, sans-serif;
+    font-family: "Nunito", sans-serif;
     background: url('assets/skygroundxcf.png') no-repeat center center fixed; 
     background-size: cover;
 }
