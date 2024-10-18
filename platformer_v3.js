@@ -6,18 +6,18 @@
 
 /* to do:
 - game width overlapping text on mid screen sizes
-X max and min spacing for each ostacle type
-X when platform speed changes, update speed of all visible objects
 - more obstacles (platforms?)
-X obstacle clusters (CACTUS CLUSTERS!)
 - collect apples
 - high score
 - sound off button
-? better collision detection
-? trees in background
 - first two obstacles don't kill if player hasn't moved
 - more interesting background
 - walk along start button
+? better collision detection
+? trees in background
+X max and min spacing for each ostacle type
+X when platform speed changes, update speed of all visible objects
+X obstacle clusters (CACTUS CLUSTERS!)
 X better winner sequence
 X add sounds
 X work on mobile
