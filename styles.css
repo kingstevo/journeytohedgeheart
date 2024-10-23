@@ -1,0 +1,103 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #87CEEB;
+    font-family: "Nunito", sans-serif;
+    background: url('assets/skygroundxcf.png') no-repeat center center fixed; 
+    background-size: cover;
+}
+
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+h1 {
+    font-size: 2em; /* Large font size for emphasis */
+    font-weight: bold; /* Bold to make the header stand out */
+    color: #ececec; /* Slightly darker color for the header */
+    margin-bottom: 10px; /* Space below the header */
+    padding-bottom: 5px; /* Padding for a little breathing space */
+    border-bottom: 2px solid #ddd; /* Underline for visual separation */
+}
+
+p {
+    font-size: 0.8em; /* Slightly larger than default for better readability */
+    margin-bottom: 5px; /* Space between paragraphs */
+    padding: 5px 0; /* Top and bottom padding for breathing room */
+    color: #ffffff; /* Medium gray color for a softer look */
+}
+
+.container {
+    max-width: 80%; /* Limit the width of the content */
+    margin: 0 auto; /* Center the content */
+    padding: 1%; /* Padding around the content */
+}
+
+.headerContent {
+    display: flex; /* Use flexbox to align items */
+    align-items: center; /* Vertically center the image and text */
+    gap: 15px; /* Space between the image and the heading */
+    margin-bottom: 10px; /* Space below the header section */
+}
+
+#game-container {
+    position: absolute;
+    bottom: 0px;
+    left: 0;
+    width: 100%;
+    height: 600px;
+    display: flex;
+    align-items: flex-end;
+}
+
+/* Style for the header image */
+.headerImage {
+    width: 60px; /* Set a fixed width for the image */
+    height: 60px; /* Set a fixed height for the image */
+    object-fit: cover; /* Maintain aspect ratio, crop if needed */
+    border-radius: 5%; /* Optional: makes the image circular */
+}
+
+/* Style for buttons */
+.mobile-controls {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    display: none;
+    justify-content: space-around;
+    pointer-events: none; /* Prevents buttons from blocking game canvas touch */
+    display: none; /* start hidden, show if device has touch */
+}
+
+.mobile-controls button {
+    width: 80px;
+    height: 80px;
+    font-size: 20px;
+    border-radius: 50%;
+    background-color: #333;
+    color: white;
+    pointer-events: auto; /* Re-enables pointer events for the buttons */
+    opacity: 0.7;
+    border: none;
+    touch-action: manipulation; /* allows for interactions like panning and scrolling but prevents double-tap zooming on the element. */
+    -webkit-user-select: none; /* For Safari and Chrome */
+    -moz-user-select: none; /* For Firefox */
+    -ms-user-select: none; /* For Internet Explorer/Edge */
+    user-select: none; /* stop text being selected */
+}
+
+/* Media query: Hide buttons on desktop */
+@media only screen and (max-width: 767px) and (pointer: coarse) {
+    .mobile-controls {
+        display: flex;
+    }
+
+    #game-container {
+        bottom: 120px;
+        height: auto;
+    }
+
+}
