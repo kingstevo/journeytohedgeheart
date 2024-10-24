@@ -83,7 +83,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: { y: gravity },  // Gravity pulls the player down
-            debug: true
+            debug: false
         }
     },
     scene: {
@@ -261,14 +261,14 @@ function addObstacle() {
         // Obstacle array: 0. name, 1. speed factor, 2. starting height, 
         // 3. gravity, 4. width, 5. x-offset, 6. wobble, 7. depth, 8. score (seconds)
         let obstacles = [
-            // ['cactusS', 1, 450, gravity, 80, 0, false, 5, 3600],
-            // ['flamingo', 1.5, 450, gravity, 80, 0, 'wobble', 10, 3600],
-            // ['crab', 0.5, 450, gravity, 80, 0, 'leftright', 9, 3600],
-            // ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800],
-            // ['bird', 2, 250, -gravity, 80, 0, 'updown', 8, 7200],
-            // ['cactusCluster', 1, 450, gravity, 80, 0, false, 5, 18000],
-            // ['eagle', 4, 150, -gravity, 100, 0, 'divebomb', 11, 1000],
-            ['cactusLizard', 1, 450, gravity, 100, 0, false, 11, 15000],
+            ['cactusS', 1, 450, gravity, 80, 0, false, 5, 3600],
+            ['flamingo', 1.5, 450, gravity, 80, 0, 'wobble', 10, 3600],
+            ['crab', 0.5, 450, gravity, 80, 0, 'leftright', 9, 3600],
+            ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800],
+            ['bird', 2, 250, -gravity, 80, 0, 'updown', 8, 7200],
+            ['cactusCluster', 1, 450, gravity, 80, 0, false, 5, 18000],
+            ['eagle', 4, 150, -gravity, 100, 0, 'divebomb', 11, 1000],
+            // ['cactusLizard', 1, 450, gravity, 100, 0, false, 11, 15000],
             // ['zebra', 3, 450, gravity, 180, 0, 'updown', 11, 10000]
         ];
 
