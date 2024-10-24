@@ -269,7 +269,7 @@ function addObstacle() {
             // ['cactusCluster', 1, 450, gravity, 80, 0, false, 5, 18000],
             // ['eagle', 4, 150, -gravity, 100, 0, 'divebomb', 11, 1000],
             ['cactusLizard', 1, 450, gravity, 100, 0, false, 11, 15000],
-            ['zebra', 3, 450, gravity, 180, 0, 'updown', 11, 10000]
+            // ['zebra', 3, 450, gravity, 180, 0, 'updown', 11, 10000]
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
@@ -285,7 +285,7 @@ function addObstacle() {
                 break;
             case 'cactusLizard':
                 renderObstacle(this, ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800]);
-                renderObstacle(this, ['lizard', 1, 410, gravity, 50, -10, false, 5, 3600]);
+                renderObstacle(this, ['lizard', 1, 410, 0, 50, -10, 'leapup', 5, 3600]);
                 break;
             default:
                 renderObstacle(this, chosenObstacle);
@@ -356,8 +356,8 @@ function renderObstacle(scene, obs) {
         case 'leapup':
             scene.tweens.add({
                 targets: obstacle,
-                y: obstacle.y + sceneH,
-                ease: 'Back.easeIn',
+                y: 0,
+                ease: 'Back.easeOut',
                 duration: (1 / platformSpeed * platToVelFactor * 45),
             });
             break;
