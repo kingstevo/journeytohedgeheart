@@ -8,6 +8,7 @@
 - game width overlapping text on mid screen sizes
 - more obstacles (platforms? zebra? salamander?)
 - collect apples
+- what to do inbetween dates
 - high score
 - sound off button
 - first two obstacles don't kill if player hasn't moved
@@ -15,10 +16,11 @@
 - walk along start button
 ? better collision detection
 ? trees in background
+X better winner sequence
+X fix play again button click area
 X max and min spacing for each ostacle type
 X when platform speed changes, update speed of all visible objects
 X obstacle clusters (CACTUS CLUSTERS!)
-X better winner sequence
 X add sounds
 X work on mobile
 X scale to fit window size
@@ -38,8 +40,10 @@ let platformSpeed = 1;
 let platToVelFactor = 60;
 let groundHeight = 565;
 let gravity = 2000;
-let gameSpeedUpInterval = 15; //seconds
-let gameSpeedUpFactor = 0.25; // addition to platform speed each interval
+let gameSpeedUpInterval = 10; //seconds
+let gameSpeedUpFactor = 0.2; // addition to platform speed each interval
+let obstacleMinGap = 4000;
+let obstacleMaxGap = 9000;
 
 let fontFamily = 'Nunito';
 
@@ -142,7 +146,7 @@ function create() {
 
     // Create a static ground collider for the player to stand on
     groundCollider = this.physics.add.staticGroup();
-    groundCollider.create(sceneW / 2, groundHeight - 25, 'tiles', 2).setDisplaySize(sceneW * 1.2, 0).refreshBody();
+    groundCollider.create(sceneW / 2, groundHeight - 28, 'tiles', 2).setDisplaySize(sceneW * 1.2, 0).refreshBody();
     this.physics.add.collider(player, groundCollider);
 
     score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
@@ -237,7 +241,7 @@ function countGameTime() {
     // increase platform speed and score multiples as the game progresses (every 20s)
     if ((gameClock > 0) && (gameClock % gameSpeedUpInterval === 0)) {
         platformSpeed += gameSpeedUpFactor;
-        this.obstaclePassSound.setRate(this.obstaclePassSound.rate + 0.1);
+        this.obstaclePassSound.setRate(this.obstaclePassSound.rate + 0.05);
     }
 }
 
@@ -246,7 +250,7 @@ function addObstacleWithRandomDelay() {
     // add obstacles with a random delay related to the platfrom speed
     // (higher platform speed, more frequent obstacles)
     // randomDelay = Phaser.Math.Between(1 / platformSpeed * 500, 1 / platformSpeed * 5000);
-    randomDelay = Phaser.Math.Between(1 / platformSpeed * 4000, 1 / platformSpeed * 8000);
+    randomDelay = Phaser.Math.Between(1 / platformSpeed * obstacleMinGap, 1 / platformSpeed * obstacleMaxGap);
     this.time.addEvent({
         delay: randomDelay,
         callback: addObstacle,
@@ -261,27 +265,27 @@ function addObstacle() {
         // Obstacle array: 0. name, 1. speed factor, 2. starting height, 
         // 3. gravity, 4. width, 5. x-offset, 6. wobble, 7. depth, 8. score (seconds)
         let obstacles = [
-            ['cactusS', 1, 450, gravity, 80, 0, false, 5, 3600],
-            ['flamingo', 1.5, 450, gravity, 80, 0, 'wobble', 10, 3600],
-            ['crab', 0.5, 450, gravity, 80, 0, 'leftright', 9, 3600],
+            ['cactusS', 1, 480, gravity, 80, 0, false, 5, 3600],
+            ['flamingo', 1.3, 480, gravity, 80, 0, 'wobble', 10, 3600],
+            ['crab', 0.8, 480, gravity, 80, 0, 'leftright', 9, 3600],
             ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800],
             ['bird', 2, 250, -gravity, 80, 0, 'updown', 8, 7200],
             ['cactusCluster', 1, 450, gravity, 80, 0, false, 5, 18000],
             ['eagle', 4, 150, -gravity, 100, 0, 'divebomb', 11, 1000],
+            ['zebra', 3, 450, gravity, 180, 0, 'trot', 11, 10000]
             // ['cactusLizard', 1, 450, gravity, 100, 0, false, 11, 15000],
-            // ['zebra', 3, 450, gravity, 180, 0, 'updown', 11, 10000]
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
-        let numberOfObsToChooseFrom = Math.min(obstacles.length, Math.round(platformSpeed) - 1);
+        let numberOfObsToChooseFrom = Math.min(obstacles.length, Math.round(platformSpeed*2));
         let obCh = Phaser.Math.Between(0, numberOfObsToChooseFrom - 1);
         let chosenObstacle = obstacles[obCh];
 
         switch (chosenObstacle[0]) {
             case 'cactusCluster':
                 renderObstacle(this, ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800]);
-                renderObstacle(this, ['cactusS', 1, 450, gravity, 80, -60, false, 5, 3600]);
-                renderObstacle(this, ['cactusS', 1, 450, gravity, 80, 60, false, 5, 3600]);
+                renderObstacle(this, ['cactusS', 1, 480, gravity, 80, -60, false, 5, 3600]);
+                renderObstacle(this, ['cactusS', 1, 480, gravity, 80, 60, false, 5, 3600]);
                 break;
             case 'cactusLizard':
                 renderObstacle(this, ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800]);
@@ -312,14 +316,26 @@ function renderObstacle(scene, obs) {
     // Place the obstacles in front of the background
     obstacle.setDepth(obs[7]); // Depth of 1 puts it in front of the background (which is at 0)
 
+    let randomDelay = Phaser.Math.Between(0, 1000);
+
     // Create a tween to make the object wobble up and down, or left and right
     switch (obs[6]) {
         case 'updown':
             scene.tweens.add({
                 targets: obstacle,
-                y: obstacle.y - 40,        // Move the object up by 50 pixels
+                y: obstacle.y - 40,        // Move the object up by 40 pixels
                 ease: 'Sine.easeInOut',    // Smooth easing for up-and-down motion
                 duration: 500,             // Duration of the wobble (500 ms up, 500 ms down)
+                yoyo: true,                // Yoyo makes the object go back down after reaching the top
+                repeat: -1                 // Repeat indefinitely for continuous wobble
+            });
+            break;
+        case 'trot':
+            scene.tweens.add({
+                targets: obstacle,
+                y: obstacle.y - 20,        // Move the object up by 40 pixels
+                ease: 'Cubic.easeInOut',    // Smooth easing for up-and-down motion
+                duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
                 yoyo: true,                // Yoyo makes the object go back down after reaching the top
                 repeat: -1                 // Repeat indefinitely for continuous wobble
             });
@@ -327,11 +343,32 @@ function renderObstacle(scene, obs) {
         case 'leftright':
             scene.tweens.add({
                 targets: obstacle.body.velocity,
-                x: velX - 80,        // Move the object up by 50 pixels
-                ease: 'Sine.easeInOut',    // Smooth easing for up-and-down motion
-                duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
-                yoyo: true,                // Yoyo makes the object go back down after reaching the top
-                repeat: -1                 // Repeat indefinitely for continuous wobble
+                x: velX - 80,
+                ease: 'Sine.easeInOut',
+                duration: 200,
+                yoyo: true,
+                repeat: -1
+            });
+            break;
+        case 'leftrightX':
+            scene.tweens.add({
+                targets: obstacle,
+                x: obstacle.x - 15,
+                ease: 'Sine.easeInOut',
+                duration: 150,
+                yoyo: true,
+                repeat: -1,
+                delay: randomDelay
+            });
+            break;
+        case 'flyby':
+            scene.tweens.add({
+                targets: obstacle,
+                x: obstacle.x - sceneW - 100,
+                ease: 'Sine.easeIn',
+                duration: obs[1],
+                delay: randomDelay,
+                loop:-1
             });
             break;
         case 'wobble':
@@ -361,34 +398,105 @@ function renderObstacle(scene, obs) {
                 duration: (1 / platformSpeed * platToVelFactor * 45),
             });
             break;
+        case 'winnerHeart':
+            scene.tweens.add({
+                targets: obstacle,
+                y: obstacle.y - 200,
+                ease: 'Sine.easeInOut',
+                duration: 1000,
+                yoyo: true,
+                repeat: -1
+            });
+            break;
+        case 'appear':
+            obstacle.setAlpha(0);
+            scene.tweens.add({
+                targets: obstacle,
+                alpha: 1,
+                ease: 'Linear',
+                duration: 2000,
+            });
+            break;
+        case 'party':
+            oldScaleX = obstacle.scaleX;
+            oldScaleY = obstacle.scaleY;
+            obstacle.scaleX = 0;
+            obstacle.scaleY = 0;
+            scene.tweens.chain({
+                targets: obstacle,
+                tweens: [
+                    {
+                        delay: randomDelay,
+                        scaleX: oldScaleX,
+                        scaleY: oldScaleY,
+                        duration: 250,
+                        ease: 'Power1'
+
+                    },
+                    {
+                        y: obstacle.y - 20,
+                        ease: 'Power1',
+                        duration: 150,
+                        loop: 3,
+                        yoyo: true
+                    },
+                    {
+                        x: obstacle.x - 50,
+                        ease: 'Cubic.easeInOut',
+                        duration: 500,
+                    },
+                    {
+                        scaleX: -oldScaleX,
+                        ease: 'Sine.easeInOut',
+                        duration: 300,
+                    },
+                    {
+                        y: obstacle.y - 20,
+                        ease: 'Power1',
+                        duration: 150,
+                        loop: 3,
+                        yoyo: true
+                    },
+                    {
+                        x: obstacle.x + 50,
+                        ease: 'Cubic.easeInOut',
+                        duration: 500,
+                    },
+                    {
+                        scaleX: -oldScaleX,
+                        ease: 'Sine.easeInOut',
+                        duration: 300,
+                    },
+                ],
+                loop: -1
+            });
+
+            break;
 
     }
 
     // add collision handler
-    scene.physics.add.collider(obstacle, groundCollider, testObsColl, null);
+    scene.physics.add.collider(obstacle, groundCollider);
     scene.physics.add.collider(player, obstacle, hitObstacle, null, scene);
 
     obstacle.passed = false;  // Add a custom flag to track if the obstacle has been passed
-
     obstacle.score = obs[8] * platformSpeed;
-
     obstaclesArray.push(obstacle);
 }
 
 
-function testObsColl(ostacle, groundCollider) {
-console.log("here: ",obstacle.parameters[0])
-
-}
-
 function hitObstacle(player, obstacle) {
     gameState = 'after';
-    if(obstacle.tween) obstacle.tween.stop();
     this.physics.pause();  // End game on collision
-    playerCollisionByee(this, player);
     ground.tilePositionX = 0; // Stop ground movement
-    // stop tweening
-    scoreText.setText('Journey Over! Only ' + convertSecondsIntoText(score) + ' to go to Hedgeheart');
+
+    if (obstacle.parameters[0] === 'cyanHeart') {
+        playerCollisionWinner(this, player);
+        scoreText.setText('Congratulations! You made it to Hedgeheart!');
+    } else {
+        playerCollisionByee(this, player);
+        scoreText.setText('Journey Over! Only ' + convertSecondsIntoText(score) + ' to go to Hedgeheart');
+    }
 
     playAgainButton = addButton(this, 'Play again?');
 
@@ -402,18 +510,18 @@ function addButton(scene, buttonText) {
     // Create a "Play Again" button
     buttonW = 200;
     buttonH = 80;
-    buttonX = sceneW / 2 - buttonW / 2;
-    buttonY = sceneH / 2 - buttonH / 2;
+    buttonX = sceneW / 2;
+    buttonY = sceneH / 2;
     // Draw the "Play Again" button background with rounded edges and raised look
     buttonBackground = scene.add.graphics();
     buttonBackground.fillStyle(0x222222, 0.3); // Grey color for the background
-    buttonBackground.fillRoundedRect(0, 0, buttonW, buttonH, 20); // Rounded rectangle (x, y, width, height, radius)
+    buttonBackground.fillRoundedRect(0 - (buttonW / 2), 0 - (buttonH / 2), buttonW, buttonH, 20); // Rounded rectangle (x, y, width, height, radius)
     buttonBackground.lineStyle(2, 0x888888, 0.3); // Add a border
-    buttonBackground.strokeRoundedRect(0, 0, buttonW, buttonH, 20); // Border with rounded edges
+    buttonBackground.strokeRoundedRect(0 - (buttonW / 2), 0 - (buttonH / 2), buttonW, buttonH, 20); // Border with rounded edges
 
     // Create the text on top of the rounded button
-    button = scene.add.text(buttonW / 2, buttonH / 2, buttonText, {
-        fontSize: '28px',
+    button = scene.add.text(0, 0, buttonText, {
+        fontSize: '26px',
         fontFamily: fontFamily,
         fill: '#ffffff' // White text color
     }).setOrigin(0.5); // Center the text on the button
@@ -443,8 +551,6 @@ function addButton(scene, buttonText) {
         scene.input.setDefaultCursor('default');  // Reset the cursor back to default
     });
 
-    // scene.physics.add.collider(buttonGroup, player);
-
     return buttonGroup;
 }
 
@@ -469,13 +575,41 @@ function playerCollisionWinner(scene, player) {
     player.body.setVelocity(0); // Stop player movement
     scene.winnerSound.play();
 
-    scoreText.setText('Congratulations! You made it to Hedgeheart!');
+    // bring all the obstacles back in for a dance party
+    // Obstacle array: 0. name, 1. speed factor, 2. starting height, 
+    // 3. gravity, 4. width, 5. x-offset, 6. wobble, 7. depth, 8. score (seconds)
+
+    renderObstacle(scene, ['cactusS', 0, 500, gravity, 80, -sceneW + 40, 'appear', 4, 0]);
+    renderObstacle(scene, ['cactusL', 0, 460, gravity, 140, -sceneW + 90, 'appear', 3, 0]);
+    renderObstacle(scene, ['cactusS', 0, 500, gravity, 80, -sceneW + 140, 'appear', 4, 0]);
+    renderObstacle(scene, ['cactusS', 0, 500, gravity, 80, -sceneW + 580, 'appear', 4, 0]);
+    renderObstacle(scene, ['cactusL', 0, 460, gravity, 140, -sceneW + 630, 'appear', 3, 0]);
+    renderObstacle(scene, ['cactusS', 0, 500, gravity, 80, -sceneW + 680, 'appear', 4, 0]);
+
+
+    renderObstacle(scene, ['flamingo', 0, 540, gravity, 80, -sceneW + 550, 'wobble', 5, 0]);
+    renderObstacle(scene, ['flamingo', 0, 540, gravity, 80, -sceneW + 490, 'wobble', 6, 0]);
+    renderObstacle(scene, ['flamingo', 0, 540, gravity, 80, -sceneW + 430, 'wobble', 7, 0]);
+
+    renderObstacle(scene, ['crab', 0, 500, gravity, 80, -sceneW + 150, 'leftrightX', 5, 0]);
+    renderObstacle(scene, ['crab', 0, 500, gravity, 80, -sceneW + 210, 'leftrightX', 6, 0]);
+    renderObstacle(scene, ['crab', 0, 500, gravity, 80, -sceneW + 270, 'leftrightX', 7, 0]);
+
+    renderObstacle(scene, ['bird', 2000, 150, gravity, 80, 0, 'flyby', 8, 0]);
+    renderObstacle(scene, ['bird', 2000, 200, gravity, 80, 0, 'flyby', 9, 0]);
+    renderObstacle(scene, ['bird', 2000, 250, gravity, 80, 0, 'flyby', 10, 0]);
+
+    renderObstacle(scene, ['eagle', 1500, 150, gravity, 80, 0, 'flyby', 8, 0]);
+    renderObstacle(scene, ['eagle', 1500, 200, gravity, 80, 0, 'flyby', 9, 0]);
+    renderObstacle(scene, ['eagle', 1500, 250, gravity, 80, 0, 'flyby', 10, 0]);
+
+    renderObstacle(scene, ['zebra', 0, 470, gravity, 140, -sceneW + sceneW/2 -40, 'party', 6, 0]);
 
     // Tween for spinning player
     scene.tweens.add({
         targets: player,
         y: player.y - 100,
-        duration: 200,
+        duration: 500,
         ease: 'Sine.easeIn',
         yoyo: true,
         repeat: -1
@@ -483,16 +617,18 @@ function playerCollisionWinner(scene, player) {
 }
 
 function addCloudsWithRandomDelay() {
+    if (gameState != 'after') {
 
-    // add obstacles with a random delay between x and y milliseconds
-    randomDelay = Phaser.Math.Between(300, 2000);
+        // add obstacles with a random delay between x and y milliseconds
+        randomDelay = Phaser.Math.Between(300, 2000);
 
-    this.time.addEvent({
-        delay: randomDelay,
-        callback: littleFluffyClouds,
-        callbackScope: this,
-        loop: false // use the addOstacle to call this again later
-    });
+        this.time.addEvent({
+            delay: randomDelay,
+            callback: littleFluffyClouds,
+            callbackScope: this,
+            loop: false // use the addOstacle to call this again later
+        });
+    }
 
 }
 
@@ -651,10 +787,10 @@ function update() {
     if (config.physics.arcade.debug) text += ' GameClock: ' + gameClock + ' Platform Speed: ' + platformSpeed;
     scoreText.setText(text);
 
-    if (score < 10 && winner == false) {
+    if (score < 10 && winner == false && gameState === 'during') {
         // 10 second to the end add heart obstacle
         winner = true;
-        addWinner.call(this);
+        renderObstacle(this, ['cyanHeart', 3, 350, 0, 400, 0, 'winnerHeart', 1, 0])
     }
 
 }
@@ -672,7 +808,7 @@ function convertSecondsIntoText(totalSeconds) {
     const days = Math.floor(totalSeconds / (24 * 60 * 60));
     const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
     const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
-    const seconds = totalSeconds % 60;
+    const seconds = Math.round(totalSeconds % 60);
 
     return [
         days > 0 ? `${days} ${days === 1 ? 'day' : 'days'}` : '',
@@ -681,48 +817,3 @@ function convertSecondsIntoText(totalSeconds) {
         seconds > 0 ? `${seconds} ${seconds === 1 ? 'second' : 'seconds'}` : ''
     ].filter(Boolean).join(' ') || '0 seconds';
 }
-
-function hitWinner() {
-    gameState = 'after';
-    this.physics.pause();  // End game on collision
-    playerCollisionWinner(this, player);
-
-    playAgainButton = addButton(this, 'Play again?');
-
-    // On button click, restart the game
-    playAgainButton.on('pointerdown', () => {
-        startGame(this);
-    });
-}
-
-function addWinner() {
-
-    // create the obstacle sprite    
-    obstacle = this.physics.add.sprite(sceneW + 50, 350, 'cyanHeart'); // set to appear off screen to the right
-
-    obstacle.displayWidth = 600;
-    obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
-
-    // Place the obstacles in front of the background
-    obstacle.setDepth(30); // Depth of 1 puts it in front of the background (which is at 0)
-
-
-    // Set gravity and horizontal velocity to scroll the obstacle from right to left
-    obstacle.body.setGravityY(gravity);  // gravity applied to each obstacle
-    obstacle.body.setVelocityX(-platformSpeed * platToVelFactor * 3);
-    obstacle.body.setBounce(0.2);
-
-    // Create a tween to make the object wobble up and down, or left and right
-    this.tweens.add({
-        targets: obstacle,
-        y: obstacle.y - 200,        // Move the object up by 50 pixels
-        ease: 'Sine.easeInOut',    // Smooth easing for up-and-down motion
-        duration: 1000,             // Duration of the wobble (500 ms up, 500 ms down)
-        yoyo: true,                // Yoyo makes the object go back down after reaching the top
-        repeat: -1                 // Repeat indefinitely for continuous wobble
-    });
-
-    // add collision handler
-    this.physics.add.collider(groundCollider, obstacle);
-    this.physics.add.collider(player, obstacle, hitWinner, null, this);
-};
