@@ -273,23 +273,19 @@ function addObstacle() {
             ['cactusCluster', 1, 450, gravity, 80, 0, false, 5, 18000],
             ['eagle', 4, 150, -gravity, 100, 0, 'divebomb', 11, 1000],
             ['zebra', 3, 450, gravity, 180, 0, 'trot', 11, 10000]
-            // ['cactusLizard', 1, 450, gravity, 100, 0, false, 11, 15000],
+            ['lizard', 5, 480, gravity, 70, 0, 'wobble', 11, 0],
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
-        let numberOfObsToChooseFrom = Math.min(obstacles.length, Math.round(platformSpeed*2));
+        let numberOfObsToChooseFrom = Math.min(obstacles.length, Math.round(platformSpeed * 3));
         let obCh = Phaser.Math.Between(0, numberOfObsToChooseFrom - 1);
         let chosenObstacle = obstacles[obCh];
 
         switch (chosenObstacle[0]) {
             case 'cactusCluster':
-                renderObstacle(this, ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800]);
-                renderObstacle(this, ['cactusS', 1, 480, gravity, 80, -60, false, 5, 3600]);
-                renderObstacle(this, ['cactusS', 1, 480, gravity, 80, 60, false, 5, 3600]);
-                break;
-            case 'cactusLizard':
-                renderObstacle(this, ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800]);
-                renderObstacle(this, ['lizard', 1, 410, 0, 50, -10, 'leapup', 5, 3600]);
+                renderObstacle(this, ['cactusL', 1, 460, gravity, 140, 0, false, 4, chosenObstacle[8]]);
+                renderObstacle(this, ['cactusS', 1, 490, gravity, 80, -60, false, 5, 0]);
+                renderObstacle(this, ['cactusS', 1, 490, gravity, 80, 60, false, 5, 0]);
                 break;
             default:
                 renderObstacle(this, chosenObstacle);
@@ -368,7 +364,7 @@ function renderObstacle(scene, obs) {
                 ease: 'Sine.easeIn',
                 duration: obs[1],
                 delay: randomDelay,
-                loop:-1
+                loop: -1
             });
             break;
         case 'wobble':
@@ -515,9 +511,9 @@ function addButton(scene, buttonText) {
     // Draw the "Play Again" button background with rounded edges and raised look
     buttonBackground = scene.add.graphics();
     buttonBackground.fillStyle(0x222222, 0.3); // Grey color for the background
-    buttonBackground.fillRoundedRect(0 - (buttonW / 2), 0 - (buttonH / 2), buttonW, buttonH, 20); // Rounded rectangle (x, y, width, height, radius)
-    buttonBackground.lineStyle(2, 0x888888, 0.3); // Add a border
-    buttonBackground.strokeRoundedRect(0 - (buttonW / 2), 0 - (buttonH / 2), buttonW, buttonH, 20); // Border with rounded edges
+    buttonBackground.fillRoundedRect(0 - (buttonW / 2), 0 - (buttonH / 2), buttonW, buttonH, 40); // Rounded rectangle (x, y, width, height, radius)
+    buttonBackground.lineStyle(6, 0x888888, 0.5); // Add a border
+    buttonBackground.strokeRoundedRect(0 - (buttonW / 2), 0 - (buttonH / 2), buttonW, buttonH, 40); // Border with rounded edges
 
     // Create the text on top of the rounded button
     button = scene.add.text(0, 0, buttonText, {
@@ -603,7 +599,7 @@ function playerCollisionWinner(scene, player) {
     renderObstacle(scene, ['eagle', 1500, 200, gravity, 80, 0, 'flyby', 9, 0]);
     renderObstacle(scene, ['eagle', 1500, 250, gravity, 80, 0, 'flyby', 10, 0]);
 
-    renderObstacle(scene, ['zebra', 0, 470, gravity, 140, -sceneW + sceneW/2 -40, 'party', 6, 0]);
+    renderObstacle(scene, ['zebra', 0, 470, gravity, 140, -sceneW + sceneW / 2 - 40, 'party', 6, 0]);
 
     // Tween for spinning player
     scene.tweens.add({
@@ -666,26 +662,28 @@ function littleFluffyClouds() {
 function showPassedCelebration(scene, obstacle) {
     //obstacle.setTint(0x00ff00);  // Flash to show passed
     // Create text over the obstacle
-    let scoreFlash = scene.add.text(obstacle.x, obstacle.y - 50, '- ' + convertSecondsIntoText(obstacle.score), {
-        fontSize: '32px',
-        fill: '#ff0',
-        fontFamily: fontFamily,
-        fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(50);
+    if (obstacle.score > 0) {
+        let scoreFlash = scene.add.text(obstacle.x, obstacle.y - 50, '- ' + convertSecondsIntoText(obstacle.score), {
+            fontSize: '32px',
+            fill: '#ff0',
+            fontFamily: fontFamily,
+            fontStyle: 'bold'
+        }).setOrigin(0.5).setDepth(50);
 
-    // Tween to move the score flash upwards and fade it out
-    scene.tweens.add({
-        targets: scoreFlash,
-        y: obstacle.y - 100, // Move it up
-        alpha: 0,            // Fade it out
-        duration: 1000,      // 1 second duration
-        ease: 'Linear',
-        onComplete: function () {
-            scoreFlash.destroy(); // Destroy the text once the animation is complete
-        }
-    });
+        // Tween to move the score flash upwards and fade it out
+        scene.tweens.add({
+            targets: scoreFlash,
+            y: obstacle.y - 100, // Move it up
+            alpha: 0,            // Fade it out
+            duration: 1000,      // 1 second duration
+            ease: 'Linear',
+            onComplete: function () {
+                scoreFlash.destroy(); // Destroy the text once the animation is complete
+            }
+        });
 
-    scene.obstaclePassSound.play();
+        scene.obstaclePassSound.play();
+    }
 }
 
 function setupControls() {
