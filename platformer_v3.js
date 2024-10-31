@@ -5,10 +5,9 @@
 
 
 /* to do:
-- game width overlapping text on mid screen sizes
-- more obstacles (platforms? zebra? salamander?)
-- collect apples
 - what to do inbetween dates
+- game width overlapping text on mid screen sizes
+- collect apples
 - high score
 - sound off button
 - first two obstacles don't kill if player hasn't moved
@@ -16,6 +15,7 @@
 - walk along start button
 ? better collision detection
 ? trees in background
+X more obstacles (platforms? zebra? salamander?)
 X better winner sequence
 X fix play again button click area
 X max and min spacing for each ostacle type
@@ -149,8 +149,6 @@ function create() {
     groundCollider.create(sceneW / 2, groundHeight - 28, 'tiles', 2).setDisplaySize(sceneW * 1.2, 0).refreshBody();
     this.physics.add.collider(player, groundCollider);
 
-    score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
-
     scoreText = this.add.text(20, sceneH - 40, 'Score: ' + convertSecondsIntoText(score), {
         fontSize: '20px',
         fill: '#ffffff',
@@ -247,15 +245,14 @@ function countGameTime() {
 
 function addObstacleWithRandomDelay() {
 
-    // add obstacles with a random delay related to the platfrom speed
+    // add obstacles with a random delay related to the platform speed
     // (higher platform speed, more frequent obstacles)
-    // randomDelay = Phaser.Math.Between(1 / platformSpeed * 500, 1 / platformSpeed * 5000);
     randomDelay = Phaser.Math.Between(1 / platformSpeed * obstacleMinGap, 1 / platformSpeed * obstacleMaxGap);
     this.time.addEvent({
         delay: randomDelay,
         callback: addObstacle,
         callbackScope: this,
-        loop: false // use the addOstacle to call this again later
+        loop: false
     });
 }
 
@@ -265,27 +262,27 @@ function addObstacle() {
         // Obstacle array: 0. name, 1. speed factor, 2. starting height, 
         // 3. gravity, 4. width, 5. x-offset, 6. wobble, 7. depth, 8. score (seconds)
         let obstacles = [
-            ['cactusS', 1, 480, gravity, 80, 0, false, 5, 3600],
-            ['flamingo', 1.3, 480, gravity, 80, 0, 'wobble', 10, 3600],
-            ['crab', 0.8, 480, gravity, 80, 0, 'leftright', 9, 3600],
-            ['cactusL', 1, 460, gravity, 140, 0, false, 4, 10800],
-            ['bird', 2, 250, -gravity, 80, 0, 'updown', 8, 7200],
-            ['cactusCluster', 1, 450, gravity, 80, 0, false, 5, 18000],
-            ['eagle', 4, 150, -gravity, 100, 0, 'divebomb', 11, 1000],
-            ['zebra', 3, 450, gravity, 180, 0, 'trot', 11, 10000]
-            ['lizard', 5, 480, gravity, 70, 0, 'wobble', 11, 0],
+            { name: 'cactusS', speedFactor: 1, startingHeight: 480, gravity: gravity, width: 80, xOffset: 0, tween: false, depth: 5, score: 3600 },
+            { name: 'flamingo', speedFactor: 1.3, startingHeight: 480, gravity: gravity, width: 80, xOffset: 0, tween: 'wobble', depth: 10, score: 3600 },
+            { name: 'crab', speedFactor: 0.8, startingHeight: 480, gravity: gravity, width: 80, xOffset: 0, tween: 'leftright', depth: 9, score: 3600 },
+            { name: 'cactusL', speedFactor: 1, startingHeight: 460, gravity: gravity, width: 140, xOffset: 0, tween: false, depth: 4, score: 10800 },
+            { name: 'bird', speedFactor: 2, startingHeight: 250, gravity: -gravity, width: 80, xOffset: 0, tween: 'updown', depth: 8, score: 7200 },
+            { name: 'cactusCluster', speedFactor: 1, startingHeight: 450, gravity: gravity, width: 80, xOffset: 0, tween: false, depth: 5, score: 18000 },
+            { name: 'eagle', speedFactor: 4, startingHeight: 150, gravity: -gravity, width: 100, xOffset: 0, tween: 'divebomb', depth: 11, score: 1000 },
+            { name: 'zebra', speedFactor: 3, startingHeight: 450, gravity: gravity, width: 180, xOffset: 0, tween: 'trot', depth: 11, score: 10000 },
+            { name: 'lizard', speedFactor: 5, startingHeight: 480, gravity: gravity, width: 70, xOffset: 0, tween: 'wobble', depth: 11, score: 0 }
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
-        let numberOfObsToChooseFrom = Math.min(obstacles.length, Math.round(platformSpeed * 3));
+        let numberOfObsToChooseFrom = Math.min(obstacles.length, Math.round(platformSpeed * 3)); // higher multiple, greater obstacle mix
         let obCh = Phaser.Math.Between(0, numberOfObsToChooseFrom - 1);
         let chosenObstacle = obstacles[obCh];
 
-        switch (chosenObstacle[0]) {
+        switch (chosenObstacle.name) {
             case 'cactusCluster':
-                renderObstacle(this, ['cactusL', 1, 460, gravity, 140, 0, false, 4, chosenObstacle[8]]);
-                renderObstacle(this, ['cactusS', 1, 490, gravity, 80, -60, false, 5, 0]);
-                renderObstacle(this, ['cactusS', 1, 490, gravity, 80, 60, false, 5, 0]);
+                renderObstacle(this, { name: 'cactusL', speedFactor: 1, startingHeight: 460, gravity: gravity, width: 140, xOffset: 0, tween: false, depth: 4, score: chosenObstacle.score});
+                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 480, gravity: gravity, width: 80, xOffset: 60, tween: false, depth: 5, score: 0});
+                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 480, gravity: gravity, width: 80, xOffset: -60, tween: false, depth: 5, score: 0});
                 break;
             default:
                 renderObstacle(this, chosenObstacle);
@@ -297,25 +294,25 @@ function addObstacle() {
 
 function renderObstacle(scene, obs) {
     // create the obstacle sprite
-    obstacle = scene.physics.add.sprite(sceneW + 50 + obs[5], obs[2], obs[0]);
+    obstacle = scene.physics.add.sprite(sceneW + 50 + obs.xOffset, obs.startingHeight, obs.name);
 
     obstacle.parameters = obs;
 
-    obstacle.displayWidth = obs[4];
+    obstacle.displayWidth = obs.width;
     obstacle.scaleY = obstacle.scaleX; // extra line to scale the image proportional
 
     // Set gravity and horizontal velocity to scroll the obstacle from right to left
-    obstacle.body.setGravityY(obs[3]);  // gravity applied to each obstacle
-    let velX = -platformSpeed * platToVelFactor * obs[1]
+    obstacle.body.setGravityY(obs.gravity);  // gravity applied to each obstacle
+    let velX = -platformSpeed * platToVelFactor * obs.speedFactor
     obstacle.body.setVelocityX(velX);
 
     // Place the obstacles in front of the background
-    obstacle.setDepth(obs[7]); // Depth of 1 puts it in front of the background (which is at 0)
+    obstacle.setDepth(obs.depth); // Depth of 1 puts it in front of the background (which is at 0)
 
     let randomDelay = Phaser.Math.Between(0, 1000);
 
     // Create a tween to make the object wobble up and down, or left and right
-    switch (obs[6]) {
+    switch (obs.tween) {
         case 'updown':
             scene.tweens.add({
                 targets: obstacle,
@@ -329,11 +326,11 @@ function renderObstacle(scene, obs) {
         case 'trot':
             scene.tweens.add({
                 targets: obstacle,
-                y: obstacle.y - 20,        // Move the object up by 40 pixels
-                ease: 'Cubic.easeInOut',    // Smooth easing for up-and-down motion
-                duration: 200,             // Duration of the wobble (500 ms up, 500 ms down)
-                yoyo: true,                // Yoyo makes the object go back down after reaching the top
-                repeat: -1                 // Repeat indefinitely for continuous wobble
+                y: obstacle.y - 20,
+                ease: 'Cubic.easeInOut',
+                duration: 200,
+                yoyo: true,
+                repeat: -1
             });
             break;
         case 'leftright':
@@ -362,7 +359,7 @@ function renderObstacle(scene, obs) {
                 targets: obstacle,
                 x: obstacle.x - sceneW - 100,
                 ease: 'Sine.easeIn',
-                duration: obs[1],
+                duration: obs.speedFactor,
                 delay: randomDelay,
                 loop: -1
             });
@@ -476,7 +473,7 @@ function renderObstacle(scene, obs) {
     scene.physics.add.collider(player, obstacle, hitObstacle, null, scene);
 
     obstacle.passed = false;  // Add a custom flag to track if the obstacle has been passed
-    obstacle.score = obs[8] * platformSpeed;
+    obstacle.score = obs.score * platformSpeed;
     obstaclesArray.push(obstacle);
 }
 
@@ -486,7 +483,7 @@ function hitObstacle(player, obstacle) {
     this.physics.pause();  // End game on collision
     ground.tilePositionX = 0; // Stop ground movement
 
-    if (obstacle.parameters[0] === 'cyanHeart') {
+    if (obstacle.parameters.name === 'cyanHeart') {
         playerCollisionWinner(this, player);
         scoreText.setText('Congratulations! You made it to Hedgeheart!');
     } else {
@@ -532,7 +529,7 @@ function addButton(scene, buttonText) {
     scene.tweens.add({
         targets: buttonGroup,
         alpha: 1,  // Fade to fully visible (alpha = 1)
-        duration: 500,  // 1-second fade duration
+        duration: 500,
         ease: 'Linear'
     });
 
@@ -572,34 +569,26 @@ function playerCollisionWinner(scene, player) {
     scene.winnerSound.play();
 
     // bring all the obstacles back in for a dance party
-    // Obstacle array: 0. name, 1. speed factor, 2. starting height, 
-    // 3. gravity, 4. width, 5. x-offset, 6. wobble, 7. depth, 8. score (seconds)
-
-    renderObstacle(scene, ['cactusS', 0, 500, gravity, 80, -sceneW + 40, 'appear', 4, 0]);
-    renderObstacle(scene, ['cactusL', 0, 460, gravity, 140, -sceneW + 90, 'appear', 3, 0]);
-    renderObstacle(scene, ['cactusS', 0, 500, gravity, 80, -sceneW + 140, 'appear', 4, 0]);
-    renderObstacle(scene, ['cactusS', 0, 500, gravity, 80, -sceneW + 580, 'appear', 4, 0]);
-    renderObstacle(scene, ['cactusL', 0, 460, gravity, 140, -sceneW + 630, 'appear', 3, 0]);
-    renderObstacle(scene, ['cactusS', 0, 500, gravity, 80, -sceneW + 680, 'appear', 4, 0]);
-
-
-    renderObstacle(scene, ['flamingo', 0, 540, gravity, 80, -sceneW + 550, 'wobble', 5, 0]);
-    renderObstacle(scene, ['flamingo', 0, 540, gravity, 80, -sceneW + 490, 'wobble', 6, 0]);
-    renderObstacle(scene, ['flamingo', 0, 540, gravity, 80, -sceneW + 430, 'wobble', 7, 0]);
-
-    renderObstacle(scene, ['crab', 0, 500, gravity, 80, -sceneW + 150, 'leftrightX', 5, 0]);
-    renderObstacle(scene, ['crab', 0, 500, gravity, 80, -sceneW + 210, 'leftrightX', 6, 0]);
-    renderObstacle(scene, ['crab', 0, 500, gravity, 80, -sceneW + 270, 'leftrightX', 7, 0]);
-
-    renderObstacle(scene, ['bird', 2000, 150, gravity, 80, 0, 'flyby', 8, 0]);
-    renderObstacle(scene, ['bird', 2000, 200, gravity, 80, 0, 'flyby', 9, 0]);
-    renderObstacle(scene, ['bird', 2000, 250, gravity, 80, 0, 'flyby', 10, 0]);
-
-    renderObstacle(scene, ['eagle', 1500, 150, gravity, 80, 0, 'flyby', 8, 0]);
-    renderObstacle(scene, ['eagle', 1500, 200, gravity, 80, 0, 'flyby', 9, 0]);
-    renderObstacle(scene, ['eagle', 1500, 250, gravity, 80, 0, 'flyby', 10, 0]);
-
-    renderObstacle(scene, ['zebra', 0, 470, gravity, 140, -sceneW + sceneW / 2 - 40, 'party', 6, 0]);
+    renderObstacle(scene, {name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 40, tween: 'appear', depth: 4, score: 0});
+    renderObstacle(scene, {name: 'cactusL', speedFactor: 0, startingHeight: 460, gravity: gravity, width: 140, xOffset: -sceneW + 90, tween: 'appear', depth: 3, score: 0});
+    renderObstacle(scene, {name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 140, tween: 'appear', depth: 4, score: 0});
+    renderObstacle(scene, {name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 580, tween: 'appear', depth: 4, score: 0});
+    renderObstacle(scene, {name: 'cactusL', speedFactor: 0, startingHeight: 460, gravity: gravity, width: 140, xOffset: -sceneW + 630, tween: 'appear', depth: 3, score: 0});
+    renderObstacle(scene, {name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 680, tween: 'appear', depth: 4, score: 0});
+    renderObstacle(scene, { name: 'flamingo', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 80, xOffset: -sceneW + 550, tween: 'wobble', depth: 5, score: 0});
+    renderObstacle(scene, { name: 'flamingo', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 80, xOffset: -sceneW + 490, tween: 'wobble', depth: 6, score: 0});
+    renderObstacle(scene, { name: 'flamingo', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 80, xOffset: -sceneW + 430, tween: 'wobble', depth: 7, score: 0});
+    renderObstacle(scene, { name: 'crab', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 150, tween: 'leftrightX', depth: 5, score: 0});
+    renderObstacle(scene, { name: 'crab', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 210, tween: 'leftrightX', depth: 6, score: 0});
+    renderObstacle(scene, { name: 'crab', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 270, tween: 'leftrightX', depth: 7, score: 0});
+    renderObstacle(scene, { name: 'bird', speedFactor: 2000, startingHeight: 150, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 8, score: 0});
+    renderObstacle(scene, { name: 'bird', speedFactor: 2000, startingHeight: 200, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 9, score: 0});
+    renderObstacle(scene, { name: 'bird', speedFactor: 2000, startingHeight: 250, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 10, score: 0});
+    renderObstacle(scene, { name: 'eagle', speedFactor: 1500, startingHeight: 150, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 8, score: 0});
+    renderObstacle(scene, { name: 'eagle', speedFactor: 1500, startingHeight: 200, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 9, score: 0});
+    renderObstacle(scene, { name: 'eagle', speedFactor: 1500, startingHeight: 250, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 10, score: 0});
+    renderObstacle(scene, { name: 'lizard', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 50, xOffset: -80, tween: 'wobble', depth: 15, score: 0});
+    renderObstacle(scene, { name: 'zebra', speedFactor: 0, startingHeight: 470, gravity: gravity, width: 140, xOffset: -sceneW + sceneW / 2 - 40, tween: 'party', depth: 6, score: 0});
 
     // Tween for spinning player
     scene.tweens.add({
@@ -625,7 +614,6 @@ function addCloudsWithRandomDelay() {
             loop: false // use the addOstacle to call this again later
         });
     }
-
 }
 
 function littleFluffyClouds() {
@@ -681,7 +669,6 @@ function showPassedCelebration(scene, obstacle) {
                 scoreFlash.destroy(); // Destroy the text once the animation is complete
             }
         });
-
         scene.obstaclePassSound.play();
     }
 }
@@ -729,9 +716,7 @@ function setupControls() {
 
 }
 
-
 function update() {
-
     if (gameState === 'after') {
         return;  // Stop running the update function if the game is over
     }
@@ -772,9 +757,9 @@ function update() {
 
         if (obstacle.x > 0) {
             // update speed of obstacles if platform speed changes
-            let velX = -platformSpeed * platToVelFactor * obstacle.parameters[1]
+            let velX = -platformSpeed * platToVelFactor * obstacle.parameters.speedFactor;
             if (velX != obstacle.body.velocity.x) {
-                obstacle.body.setVelocityX(velX)
+                obstacle.body.setVelocityX(velX);
             }
         }
     });
@@ -788,9 +773,8 @@ function update() {
     if (score < 10 && winner == false && gameState === 'during') {
         // 10 second to the end add heart obstacle
         winner = true;
-        renderObstacle(this, ['cyanHeart', 3, 350, 0, 400, 0, 'winnerHeart', 1, 0])
+        renderObstacle(this, { name:'cyanHeart', speedFactor: 3, startingHeight: 350, gravity: 0, width: 400, xOffset: 0, tween: 'winnerHeart', depth: 1, score: 0});
     }
-
 }
 
 function playerLRSoundWithCoolDown(scene) {
