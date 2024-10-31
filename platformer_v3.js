@@ -34,6 +34,16 @@ X create logo, favicon, name
 X reset gameclock on new game
 */
 
+/* Next version of J2HH
+- levels (Paris, Istanbul, London, New York)
+- each level has different backgrounds, obstacles, colours
+- dress up Hedgehog with extras like hats, tshirt, sunglasses
+- add platforms?
+- night mode
+- inbetween dates
+- hedgehog has blaster that can fire wine/cheese at obstacle
+*/
+
 let dateOfMeetingInSeconds = new Date("2024-10-30T22:50:00");
 
 let platformSpeed = 1;
@@ -61,10 +71,11 @@ let inputState = {
 };
 let obstaclesArray = [];
 let ground, groundCollider;
-let text;
+
 let score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
-let gameClock = 0;
 let scoreText;
+let gameClock = 0;
+
 let buttonGroup;
 
 let playerLRSoundCooldown = 250; // Cooldown time in milliseconds
@@ -111,7 +122,6 @@ function preload() {
     this.load.image('eagle', 'assets/eagle.png');
     this.load.image('lizard', 'assets/lizard.png');
     this.load.image('zebra', 'assets/zebra.png');
-
     this.load.image('cyanHeart', 'assets/cyanHeart.png');
     this.load.audio('obstacleHit', 'assets/sounds/obstacleHit.mp3');
     this.load.audio('obstaclePass', 'assets/sounds/obstaclePass.mp3');
