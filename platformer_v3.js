@@ -35,11 +35,14 @@ X reset gameclock on new game
 */
 
 /* Next version of J2HH
-- levels (Paris, Istanbul, London, New York)
+- city levels (Paris, Istanbul, London, New York)
+- theme levels: food and drink, animals pt 2, modes of transport
 - each level has different backgrounds, obstacles, colours
 - dress up Hedgehog with extras like hats, tshirt, sunglasses
 - add platforms?
 - night mode
+- Sun, moon, stars, clouds moving through sky
+- weather: clouds, rain, fog, sun
 - inbetween dates
 - hedgehog has blaster that can fire wine/cheese at obstacle
 */
