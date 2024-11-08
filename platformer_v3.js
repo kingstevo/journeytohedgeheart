@@ -1,4 +1,4 @@
-// Journey to the Hedgeheart
+// Journey to Hedgeheart
 // a platform jumper inspired by the google chrome "no internet" game
 // but with graphics and gameplay influenced by my love for Cyan
 // based on https://gamedevacademy.org/how-to-make-a-mario-style-platformer-with-phaser-3/
@@ -83,6 +83,8 @@ let buttonGroup;
 
 let playerLRSoundCooldown = 250; // Cooldown time in milliseconds
 let lastplayerLRSoundTime = 0; // Timestamp of the last time the sound played
+
+let socket;
 
 // Initialize Phaser game
 var config = {
@@ -204,11 +206,35 @@ function create() {
         loop: true                // Repeat this event indefinitely
     });
 
+
+    // Sounds
     this.obstacleHitSound = this.sound.add('obstacleHit');
     this.obstaclePassSound = this.sound.add('obstaclePass');
     this.playerJumpSound = this.sound.add('playerJump');
     this.playerLRSound = this.sound.add('playerLR', { volume: 0.2 });
     this.winnerSound = this.sound.add('winner');
+
+// AI websocket remote playing
+// Connect to the WebSocket server
+socket = new WebSocket('ws://localhost:8081');
+
+socket.onopen = () => {
+    console.log('Connected to WebSocket server');
+};
+
+// Handle incoming messages
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'action') {
+        this.applyAction(data.action); // Handle action from server
+    }
+};
+
+socket.onclose = () => {
+    console.log('Disconnected from WebSocket server');
+};
+
+
 }
 
 function startGame(scene, killButton) {
@@ -293,9 +319,9 @@ function addObstacle() {
 
         switch (chosenObstacle.name) {
             case 'cactusCluster':
-                renderObstacle(this, { name: 'cactusL', speedFactor: 1, startingHeight: 460, gravity: gravity, width: 140, xOffset: 0, tween: false, depth: 4, score: chosenObstacle.score});
-                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 480, gravity: gravity, width: 80, xOffset: 60, tween: false, depth: 5, score: 0});
-                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 480, gravity: gravity, width: 80, xOffset: -60, tween: false, depth: 5, score: 0});
+                renderObstacle(this, { name: 'cactusL', speedFactor: 1, startingHeight: 460, gravity: gravity, width: 140, xOffset: 0, tween: false, depth: 4, score: chosenObstacle.score });
+                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 480, gravity: gravity, width: 80, xOffset: 60, tween: false, depth: 5, score: 0 });
+                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 480, gravity: gravity, width: 80, xOffset: -60, tween: false, depth: 5, score: 0 });
                 break;
             default:
                 renderObstacle(this, chosenObstacle);
@@ -582,26 +608,26 @@ function playerCollisionWinner(scene, player) {
     scene.winnerSound.play();
 
     // bring all the obstacles back in for a dance party
-    renderObstacle(scene, {name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 40, tween: 'appear', depth: 4, score: 0});
-    renderObstacle(scene, {name: 'cactusL', speedFactor: 0, startingHeight: 460, gravity: gravity, width: 140, xOffset: -sceneW + 90, tween: 'appear', depth: 3, score: 0});
-    renderObstacle(scene, {name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 140, tween: 'appear', depth: 4, score: 0});
-    renderObstacle(scene, {name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 580, tween: 'appear', depth: 4, score: 0});
-    renderObstacle(scene, {name: 'cactusL', speedFactor: 0, startingHeight: 460, gravity: gravity, width: 140, xOffset: -sceneW + 630, tween: 'appear', depth: 3, score: 0});
-    renderObstacle(scene, {name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 680, tween: 'appear', depth: 4, score: 0});
-    renderObstacle(scene, { name: 'flamingo', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 80, xOffset: -sceneW + 550, tween: 'wobble', depth: 5, score: 0});
-    renderObstacle(scene, { name: 'flamingo', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 80, xOffset: -sceneW + 490, tween: 'wobble', depth: 6, score: 0});
-    renderObstacle(scene, { name: 'flamingo', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 80, xOffset: -sceneW + 430, tween: 'wobble', depth: 7, score: 0});
-    renderObstacle(scene, { name: 'crab', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 150, tween: 'leftrightX', depth: 5, score: 0});
-    renderObstacle(scene, { name: 'crab', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 210, tween: 'leftrightX', depth: 6, score: 0});
-    renderObstacle(scene, { name: 'crab', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 270, tween: 'leftrightX', depth: 7, score: 0});
-    renderObstacle(scene, { name: 'bird', speedFactor: 2000, startingHeight: 150, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 8, score: 0});
-    renderObstacle(scene, { name: 'bird', speedFactor: 2000, startingHeight: 200, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 9, score: 0});
-    renderObstacle(scene, { name: 'bird', speedFactor: 2000, startingHeight: 250, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 10, score: 0});
-    renderObstacle(scene, { name: 'eagle', speedFactor: 1500, startingHeight: 150, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 8, score: 0});
-    renderObstacle(scene, { name: 'eagle', speedFactor: 1500, startingHeight: 200, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 9, score: 0});
-    renderObstacle(scene, { name: 'eagle', speedFactor: 1500, startingHeight: 250, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 10, score: 0});
-    renderObstacle(scene, { name: 'lizard', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 50, xOffset: -80, tween: 'wobble', depth: 15, score: 0});
-    renderObstacle(scene, { name: 'zebra', speedFactor: 0, startingHeight: 470, gravity: gravity, width: 140, xOffset: -sceneW + sceneW / 2 - 40, tween: 'party', depth: 6, score: 0});
+    renderObstacle(scene, { name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 40, tween: 'appear', depth: 4, score: 0 });
+    renderObstacle(scene, { name: 'cactusL', speedFactor: 0, startingHeight: 460, gravity: gravity, width: 140, xOffset: -sceneW + 90, tween: 'appear', depth: 3, score: 0 });
+    renderObstacle(scene, { name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 140, tween: 'appear', depth: 4, score: 0 });
+    renderObstacle(scene, { name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 580, tween: 'appear', depth: 4, score: 0 });
+    renderObstacle(scene, { name: 'cactusL', speedFactor: 0, startingHeight: 460, gravity: gravity, width: 140, xOffset: -sceneW + 630, tween: 'appear', depth: 3, score: 0 });
+    renderObstacle(scene, { name: 'cactusS', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 680, tween: 'appear', depth: 4, score: 0 });
+    renderObstacle(scene, { name: 'flamingo', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 80, xOffset: -sceneW + 550, tween: 'wobble', depth: 5, score: 0 });
+    renderObstacle(scene, { name: 'flamingo', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 80, xOffset: -sceneW + 490, tween: 'wobble', depth: 6, score: 0 });
+    renderObstacle(scene, { name: 'flamingo', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 80, xOffset: -sceneW + 430, tween: 'wobble', depth: 7, score: 0 });
+    renderObstacle(scene, { name: 'crab', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 150, tween: 'leftrightX', depth: 5, score: 0 });
+    renderObstacle(scene, { name: 'crab', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 210, tween: 'leftrightX', depth: 6, score: 0 });
+    renderObstacle(scene, { name: 'crab', speedFactor: 0, startingHeight: 500, gravity: gravity, width: 80, xOffset: -sceneW + 270, tween: 'leftrightX', depth: 7, score: 0 });
+    renderObstacle(scene, { name: 'bird', speedFactor: 2000, startingHeight: 150, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 8, score: 0 });
+    renderObstacle(scene, { name: 'bird', speedFactor: 2000, startingHeight: 200, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 9, score: 0 });
+    renderObstacle(scene, { name: 'bird', speedFactor: 2000, startingHeight: 250, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 10, score: 0 });
+    renderObstacle(scene, { name: 'eagle', speedFactor: 1500, startingHeight: 150, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 8, score: 0 });
+    renderObstacle(scene, { name: 'eagle', speedFactor: 1500, startingHeight: 200, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 9, score: 0 });
+    renderObstacle(scene, { name: 'eagle', speedFactor: 1500, startingHeight: 250, gravity: gravity, width: 80, xOffset: 0, tween: 'flyby', depth: 10, score: 0 });
+    renderObstacle(scene, { name: 'lizard', speedFactor: 0, startingHeight: 540, gravity: gravity, width: 50, xOffset: -80, tween: 'wobble', depth: 15, score: 0 });
+    renderObstacle(scene, { name: 'zebra', speedFactor: 0, startingHeight: 470, gravity: gravity, width: 140, xOffset: -sceneW + sceneW / 2 - 40, tween: 'party', depth: 6, score: 0 });
 
     // Tween for spinning player
     scene.tweens.add({
@@ -729,6 +755,26 @@ function setupControls() {
 
 }
 
+applyWebSocketAction(action) {
+    // Apply the action received from the server
+    if (action === "Left") {
+        inputState.left = true;
+        inputState.right = false;
+        inputState.jump = false;
+        inputState.down = false;
+    } else if (action === "Right") {
+        inputState.left = false;
+        inputState.right = true;
+        inputState.jump = false;
+        inputState.down = false;
+    } else if (action === "Jump") {
+        inputState.left = false;
+        inputState.right = false;
+        inputState.jump = true;
+        inputState.down = false;
+    }
+}
+
 function update() {
     if (gameState === 'after') {
         return;  // Stop running the update function if the game is over
@@ -786,8 +832,18 @@ function update() {
     if (score < 10 && winner == false && gameState === 'during') {
         // 10 second to the end add heart obstacle
         winner = true;
-        renderObstacle(this, { name:'cyanHeart', speedFactor: 3, startingHeight: 350, gravity: 0, width: 400, xOffset: 0, tween: 'winnerHeart', depth: 1, score: 0});
+        renderObstacle(this, { name: 'cyanHeart', speedFactor: 3, startingHeight: 350, gravity: 0, width: 400, xOffset: 0, tween: 'winnerHeart', depth: 1, score: 0 });
     }
+
+    // Websockets response. Capture the current game state, send it to the server
+           const gameState = {
+            playerPosition: { x: player.x, y: player.y },
+            score: currentScore,
+            // Any other relevant state information
+        };
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'state', gameState }));
+        }
 }
 
 function playerLRSoundWithCoolDown(scene) {
