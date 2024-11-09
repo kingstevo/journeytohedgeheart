@@ -88,6 +88,8 @@ let playerLRSoundCooldown = 250; // Cooldown time in milliseconds
 let lastplayerLRSoundTime = 0; // Timestamp of the last time the sound played
 
 let socket;
+let WSSendNow = false;
+let startingReward = 0;
 
 // Initialize Phaser game
 var config = {
@@ -217,25 +219,27 @@ function create() {
     this.playerLRSound = this.sound.add('playerLR', { volume: 0.2 });
     this.winnerSound = this.sound.add('winner');
 
-// AI websocket remote playing
-// Connect to the WebSocket server
-socket = new WebSocket('ws://localhost:8081');
+    // AI websocket remote playing
+    // Connect to the WebSocket server
+    socket = new WebSocket('ws://localhost:8081');
 
-socket.onopen = () => {
-    console.log('Connected to WebSocket server');
-};
+    socket.onopen = () => {
+        console.log('Connected to WebSocket server');
+    };
 
-// Handle incoming messages
-socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === 'action') {
-        this.applyAction(data.action); // Handle action from server
-    }
-};
+    // Handle incoming messages
+    socket.onmessage = (event) => {
+        console.log('WebSocket message received', event.data);
+        const data = JSON.parse(event.data);
+        if (data.action) {
+            applyWebSocketAction(data.action, this, playButton); // Handle action from server
+        }
+        WSSendNow = true;
+    };
 
-socket.onclose = () => {
-    console.log('Disconnected from WebSocket server');
-};
+    socket.onclose = () => {
+        console.log('Disconnected from WebSocket server');
+    };
 
 
 }
@@ -739,7 +743,6 @@ function setupControls() {
     cursors.down.on('up', () => inputState.down = false);
 
     // Setup touch controls for mobile
-
     const leftButton = document.getElementById('left-btn');
     const rightButton = document.getElementById('right-btn');
     const jumpButton = document.getElementById('jump-btn');
@@ -758,30 +761,36 @@ function setupControls() {
 
 }
 
-applyWebSocketAction(action) {
+function applyWebSocketAction(action, scene, button) {
     // Apply the action received from the server
-    if (action === "Left") {
-        inputState.left = true;
-        inputState.right = false;
-        inputState.jump = false;
-        inputState.down = false;
-    } else if (action === "Right") {
-        inputState.left = false;
-        inputState.right = true;
-        inputState.jump = false;
-        inputState.down = false;
-    } else if (action === "Jump") {
-        inputState.left = false;
-        inputState.right = false;
-        inputState.jump = true;
-        inputState.down = false;
+    inputState.left = false;
+    inputState.right = false;
+    inputState.jump = false;
+    inputState.down = false;
+    switch (action) {
+        case "Left":
+            inputState.left = true;
+            break;
+        case "Right":
+            inputState.right = true;
+            break;
+        case "Jump":
+            inputState.jump = true;
+            break;
+        case "Idle":
+            break;
+        case "Start":
+            if (gameState != 'during') startGame(scene, button);
+            break;
+        case "Reset":
+            // don't need to do anything special here - just Start again
+            break;
     }
+
 }
 
 function update() {
-    if (gameState === 'after') {
-        return;  // Stop running the update function if the game is over
-    }
+
 
     // Scroll the ground to the left by adjusting its tile position
     ground.tilePositionX += platformSpeed;  // Adjust this value to control the speed of scrolling
@@ -839,14 +848,57 @@ function update() {
     }
 
     // Websockets response. Capture the current game state, send it to the server
-           const gameState = {
-            playerPosition: { x: player.x, y: player.y },
-            score: currentScore,
-            // Any other relevant state information
-        };
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: 'state', gameState }));
+    if (socket.readyState === WebSocket.OPEN && WSSendNow === true) {
+        socket.send(JSON.stringify(gameStatusResponse()));
+        WSSendNow = false;
+    }
+
+    if (gameState === 'after') {
+        return;  // Stop running the update function if the game is over
+    }
+}
+
+function gameStatusResponse() {
+
+    const gridSize = 10;
+    const cellSize = 80;
+    const halfGrid = Math.floor(gridSize / 2);
+    const map = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
+
+    // Place player in the center of the grid
+    const playerPosX = Math.floor(player.x / cellSize);
+    const playerPosY = Math.floor(player.y / cellSize);
+    map[halfGrid][halfGrid] = 1;
+
+    // Map obstacles relative to player
+    obstaclesArray.forEach((obstacle) => {
+        if (!obstacle.passed) {
+            const obstaclePosX = Math.floor(obstacle.x / cellSize);
+            const obstaclePosY = Math.floor(obstacle.y / cellSize);
+            const gridX = halfGrid + (obstaclePosX - playerPosX);
+            const gridY = halfGrid + (obstaclePosY - playerPosY);
+
+            // Check if the obstacle falls within the grid
+            if (gridX >= 0 && gridX < gridSize && gridY >= 0 && gridY < gridSize) {
+                map[gridY][gridX] = 2; // Mark this cell as containing an obstacle
+            }
         }
+    });
+
+    if (startingReward == score) {
+        reward = 0;
+    } else {
+        reward = startingReward - score;
+        startingReward = score;
+    };
+
+    if (gameState === 'after') { doneFlag = true } else { doneFlag = false };
+
+    return {
+        state: map,
+        reward: reward,
+        done: doneFlag
+    };
 }
 
 function playerLRSoundWithCoolDown(scene) {
