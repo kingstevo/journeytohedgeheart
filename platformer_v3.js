@@ -82,12 +82,15 @@ let score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
 let scoreText;
 let gameClock = 0;
 
-let buttonGroup;
+// let buttonGroup;
 
 let playerLRSoundCooldown = 250; // Cooldown time in milliseconds
 let lastplayerLRSoundTime = 0; // Timestamp of the last time the sound played
 
 let socket;
+let WSreconnectInterval = 3000;
+let WSretryCount = 0;
+let WSmaxRetries = 5;
 let WSSendNow = false;
 let startingReward = 0;
 
@@ -219,12 +222,24 @@ function create() {
     this.playerLRSound = this.sound.add('playerLR', { volume: 0.2 });
     this.winnerSound = this.sound.add('winner');
 
+    connectWebSocket(this, playButton);
+}
+
+function connectWebSocket(scene, button) {
     // AI websocket remote playing
+
+    // Check if WebSocket is already open or connecting
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        console.log('WebSocket connection already open or connecting.');
+        return;
+    }
+
     // Connect to the WebSocket server
     socket = new WebSocket('ws://localhost:8081');
 
     socket.onopen = () => {
         console.log('Connected to WebSocket server');
+        WSretryCount = 0;
     };
 
     // Handle incoming messages
@@ -232,16 +247,24 @@ function create() {
         console.log('WebSocket message received', event.data);
         const data = JSON.parse(event.data);
         if (data.action) {
-            applyWebSocketAction(data.action, this, playButton); // Handle action from server
+            applyWebSocketAction(data.action, scene, button); // Handle action from server
         }
         WSSendNow = true;
     };
 
     socket.onclose = () => {
         console.log('Disconnected from WebSocket server');
+        // reset and wait for new connections
+        if (WSretryCount < WSmaxRetries) {
+            WSretryCount++;
+            setTimeout(() => connectWebSocket(scene, button), WSreconnectInterval);
+        }
     };
 
-
+    socket.onerror = (error) => {
+        console.log('WebSocket error:', error);
+        socket.close();  // Close the socket if there’s an error to trigger the onclose event
+    };
 }
 
 function startGame(scene, killButton) {
@@ -541,7 +564,7 @@ function hitObstacle(player, obstacle) {
 
     // On button click, restart the game
     playAgainButton.on('pointerdown', () => {
-        startGame(this);
+        startGame(this, playAgainButton);
     });
 }
 
@@ -768,29 +791,28 @@ function applyWebSocketAction(action, scene, button) {
     inputState.jump = false;
     inputState.down = false;
     switch (action) {
-        case "Left":
+        case 0: // left
             inputState.left = true;
             break;
-        case "Right":
+        case 1: // right
             inputState.right = true;
             break;
-        case "Jump":
+        case 2: // jump
             inputState.jump = true;
             break;
-        case "Idle":
+        case 3: // idle
             break;
         case "Start":
             if (gameState != 'during') startGame(scene, button);
             break;
         case "Reset":
-            // don't need to do anything special here - just Start again
+            startGame(scene, button);
             break;
     }
 
 }
 
 function update() {
-
 
     // Scroll the ground to the left by adjusting its tile position
     ground.tilePositionX += platformSpeed;  // Adjust this value to control the speed of scrolling
