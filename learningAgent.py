@@ -12,7 +12,9 @@ import tensorflow as tf
 from tensorflow.keras import models, layers, optimizers
 
 tf.get_logger().setLevel('ERROR')
-tf.autograph.set_verbosity(0) # "0" means no logging.
+tf.autograph.set_verbosity(0) # "0" means no logging
+tf.keras.utils.disable_interactive_logging()
+
 
 # WebSocket server configuration
 SERVER_HOST = 'localhost'
@@ -96,7 +98,7 @@ async def handle_episode(websocket, agent, episodes=1000, max_steps=500):
     
         while not done and step_count < max_steps:
             # Agent selects an action
-            action = agent.select_action(state)
+            action = int(agent.select_action(state))
         
             # Send action to the game
             await websocket.send(json.dumps({"action": action}))
@@ -113,13 +115,13 @@ async def handle_episode(websocket, agent, episodes=1000, max_steps=500):
         
             # Remember experience and learn
             agent.remember(state, action, reward, next_state, done)
-            agent.learn()
         
             # Update state and cumulative reward
             state = next_state
             total_reward += reward
             step_count += 1
 
+        agent.learn()
         print(f"Episode {episode_counter} ended with total reward: {total_reward}")
 
 # WebSocket server setup

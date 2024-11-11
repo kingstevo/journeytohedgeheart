@@ -87,6 +87,7 @@ let gameClock = 0;
 let playerLRSoundCooldown = 250; // Cooldown time in milliseconds
 let lastplayerLRSoundTime = 0; // Timestamp of the last time the sound played
 
+let AIControl = true; // set to false to turn off websocket activity
 let socket;
 let WSreconnectInterval = 3000;
 let WSretryCount = 0;
@@ -222,7 +223,7 @@ function create() {
     this.playerLRSound = this.sound.add('playerLR', { volume: 0.2 });
     this.winnerSound = this.sound.add('winner');
 
-    connectWebSocket(this, playButton);
+    if(AIControl) connectWebSocket(this, playButton);
 }
 
 function connectWebSocket(scene, button) {
@@ -310,6 +311,9 @@ function countGameTime() {
         platformSpeed += gameSpeedUpFactor;
         this.obstaclePassSound.setRate(this.obstaclePassSound.rate + 0.05);
     }
+
+    // // for game state testing
+    // gameStatusResponse()["state"].forEach(row => console.log(row.join('')));;
 }
 
 function addObstacleWithRandomDelay() {
@@ -350,8 +354,8 @@ function addObstacle() {
         switch (chosenObstacle.name) {
             case 'cactusCluster':
                 renderObstacle(this, { name: 'cactusL', speedFactor: 1, startingHeight: 460, gravity: gravity, width: 140, xOffset: 0, tween: false, depth: 4, score: chosenObstacle.score });
-                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 480, gravity: gravity, width: 80, xOffset: 60, tween: false, depth: 5, score: 0 });
-                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 480, gravity: gravity, width: 80, xOffset: -60, tween: false, depth: 5, score: 0 });
+                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 490, gravity: gravity, width: 80, xOffset: 60, tween: false, depth: 5, score: 0 });
+                renderObstacle(this, { name: 'cactusS', speedFactor: 1, startingHeight: 490, gravity: gravity, width: 80, xOffset: -60, tween: false, depth: 5, score: 0 });
                 break;
             default:
                 renderObstacle(this, chosenObstacle);
@@ -549,8 +553,8 @@ function renderObstacle(scene, obs) {
 
 function hitObstacle(player, obstacle) {
     gameState = 'after';
-    this.physics.pause();  // End game on collision
     ground.tilePositionX = 0; // Stop ground movement
+    this.physics.pause();  // End game on collision
 
     if (obstacle.parameters.name === 'cyanHeart') {
         playerCollisionWinner(this, player);
@@ -815,7 +819,7 @@ function applyWebSocketAction(action, scene, button) {
 function update() {
 
     // Scroll the ground to the left by adjusting its tile position
-    ground.tilePositionX += platformSpeed;  // Adjust this value to control the speed of scrolling
+    if (gameState !== 'after') ground.tilePositionX += platformSpeed;  // Adjust this value to control the speed of scrolling
 
     if (gameState === 'during') player.body.setVelocityX(-platformSpeed * platToVelFactor); // move left
 
@@ -870,7 +874,7 @@ function update() {
     }
 
     // Websockets response. Capture the current game state, send it to the server
-    if (socket.readyState === WebSocket.OPEN && WSSendNow === true) {
+    if (AIControl && socket.readyState === WebSocket.OPEN && WSSendNow === true) {
         socket.send(JSON.stringify(gameStatusResponse()));
         WSSendNow = false;
     }
@@ -882,27 +886,29 @@ function update() {
 
 function gameStatusResponse() {
 
-    const gridSize = 10;
-    const cellSize = 80;
-    const halfGrid = Math.floor(gridSize / 2);
-    const map = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
+    const gridSizeX = 10;
+    const gridSizeY = 10;
+    const cellSizeX = Math.floor(sceneW / gridSizeX);
+    const cellSizeY = Math.floor(sceneH / gridSizeY);
+    const map = Array(gridSizeX).fill().map(() => Array(gridSizeY).fill(0));
 
-    // Place player in the center of the grid
-    const playerPosX = Math.floor(player.x / cellSize);
-    const playerPosY = Math.floor(player.y / cellSize);
-    map[halfGrid][halfGrid] = 1;
-
+    // Place player on the grid
+    const playerPosX = Math.floor(player.x / cellSizeX);
+    const playerPosY = Math.floor(player.y / cellSizeY);
+    if (playerPosX >= 0 && playerPosX < gridSizeX && playerPosY >= 0 && playerPosY < gridSizeY) {
+        map[playerPosX][playerPosY] = 1;
+    }
     // Map obstacles relative to player
     obstaclesArray.forEach((obstacle) => {
         if (!obstacle.passed) {
-            const obstaclePosX = Math.floor(obstacle.x / cellSize);
-            const obstaclePosY = Math.floor(obstacle.y / cellSize);
-            const gridX = halfGrid + (obstaclePosX - playerPosX);
-            const gridY = halfGrid + (obstaclePosY - playerPosY);
+            const obstaclePosX = Math.floor(obstacle.x / cellSizeX);
+            const obstaclePosY = Math.floor(obstacle.y / cellSizeY);
+
+            const obsSpeedFactor = Math.floor(obstacle.parameters.speedFactor) + 1
 
             // Check if the obstacle falls within the grid
-            if (gridX >= 0 && gridX < gridSize && gridY >= 0 && gridY < gridSize) {
-                map[gridY][gridX] = 2; // Mark this cell as containing an obstacle
+            if (obstaclePosX >= 0 && obstaclePosX < gridSizeX && obstaclePosY >= 0 && obstaclePosY < gridSizeY) {
+                map[obstaclePosX][obstaclePosY] = obsSpeedFactor; // Mark this cell as containing an obstacle
             }
         }
     });
