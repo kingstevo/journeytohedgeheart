@@ -26,7 +26,7 @@ SERVER_PORT = 8081
 TOTAL_EPISODES = 10000
 LEARNING_INTERVAL = 100
 MAX_STEPS = 500
-MODEL_FILE_NAME = 'j2hh_learning_model.h5'
+MODEL_FILE_NAME = 'j2hh_learning_model.keras'
 
 # Global episode counter that persists across connections
 episode_counter = 0
@@ -113,6 +113,14 @@ async def handle_episode(websocket, agent, episodes=1000, max_steps=500):
     global episode_counter, learning_counter
     
     while episode_counter < TOTAL_EPISODES:  # Stop after reaching TOTAL_EPISODES
+        
+        if learning_counter >= LEARNING_INTERVAL:
+            await non_blocking_learn(agent)
+            learning_counter = 0
+            agent.save_model()
+
+        learning_counter += 1 # learn and save model before the gameplay loop
+        
         # Increment the episode counter for each new episode
         episode_counter += 1
         print(f"Episode {episode_counter}/{TOTAL_EPISODES} started")
@@ -153,12 +161,6 @@ async def handle_episode(websocket, agent, episodes=1000, max_steps=500):
             state = next_state
             total_reward += reward
             step_count += 1
-
-        learning_counter += 1
-        if learning_counter >= LEARNING_INTERVAL:
-            await non_blocking_learn(agent)
-            learning_counter = 0
-            agent.save_model()
         
         print(f"Episode {episode_counter} ended with total reward: {total_reward}")
         # store stats for evaluation

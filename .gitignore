@@ -4,3 +4,5 @@ package-lock.json
 /.vscode/
 assets/*.xcf
 assets/license.txt
+.DS_Store
+/saved_model/
