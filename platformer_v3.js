@@ -60,6 +60,7 @@ let gameSpeedUpFactor = 0.2; // addition to platform speed each interval
 let obstacleMinGap = 4000;
 let obstacleMaxGap = 9000;
 
+
 let fontFamily = 'Nunito';
 
 let gameState = 'before'; // what state is the game in? Just started? In play? Game over? before / during / after
