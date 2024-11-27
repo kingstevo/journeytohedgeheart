@@ -47,7 +47,6 @@ X reset gameclock on new game
 - hedgehog has blaster that can fire wine/cheese at obstacle
 */
 
-
 /* add AI interface to play game */
 
 let dateOfMeetingInSeconds = new Date("2024-12-12T16:55:00");
