@@ -3,7 +3,6 @@ import asyncio
 import json
 import random
 import numpy as np
-import matplotlib.pyplot as plt
 import websockets
 from concurrent.futures import ProcessPoolExecutor
 

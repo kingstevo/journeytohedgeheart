@@ -49,7 +49,7 @@ X reset gameclock on new game
 
 /* add AI interface to play game */
 
-let dateOfMeetingInSeconds = new Date("2024-12-12T16:55:00");
+let dateOfMeetingInSeconds = new Date("2025-01-04T13:00:00");
 
 let platformSpeed = 1;
 let platToVelFactor = 60;

@@ -17,6 +17,9 @@ Next version of J2HH
 - weather: clouds, rain, fog, sun
 - inbetween dates
 - hedgehog has blaster that can fire wine/cheese at obstacle
+
+- highscore
+- anyone else playing
 */
 
 let dateOfMeetingInSeconds = new Date("2024-11-21T22:55:00");
