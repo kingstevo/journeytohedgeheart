@@ -32,9 +32,10 @@ X better score display
 X host online with domain
 X create logo, favicon, name
 X reset gameclock on new game
-*/
+X add AI interface to play game
 
-/* Next version of J2HH
+
+Next version of J2HH
 - city levels (Paris, Istanbul, London, New York)
 - theme levels: food and drink, animals pt 2, modes of transport
 - each level has different backgrounds, obstacles, colours
@@ -45,11 +46,12 @@ X reset gameclock on new game
 - weather: clouds, rain, fog, sun
 - inbetween dates
 - hedgehog has blaster that can fire wine/cheese at obstacle
+
+
+
 */
 
-/* add AI interface to play game */
-
-let dateOfMeetingInSeconds = new Date("2025-01-04T13:00:00");
+let dateOfMeetingInSeconds = new Date("2025-01-11T13:00:00");
 
 let platformSpeed = 1;
 let platToVelFactor = 60;
