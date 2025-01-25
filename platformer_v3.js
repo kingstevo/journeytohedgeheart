@@ -51,7 +51,7 @@ Next version of J2HH
 
 */
 
-let dateOfMeetingInSeconds = new Date("2025-01-11T13:00:00");
+let dateOfMeetingInSeconds = new Date("2025-02-23T13:00:00");
 
 let platformSpeed = 1;
 let platToVelFactor = 60;
