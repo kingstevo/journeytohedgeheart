@@ -12,6 +12,7 @@ html {
     margin: 0;
     padding: 0;
     height: 100%;
+    overflow: hidden;
 }
 
 h1 {
@@ -31,26 +32,41 @@ p {
 }
 
 .container {
-    max-width: 80%; /* Limit the width of the content */
-    margin: 0 auto; /* Center the content */
-    padding: 1%; /* Padding around the content */
+    display: flex;
+    flex-direction: column; /* Stack child elements vertically */
+    height: 100vh; /* Full viewport height */
+    width: 100%; /* Full width */
+    padding: 0;
+    margin: 0;
 }
 
 .headerContent {
     display: flex; /* Use flexbox to align items */
     align-items: center; /* Vertically center the image and text */
     gap: 15px; /* Space between the image and the heading */
-    margin-bottom: 10px; /* Space below the header section */
+    max-width: 80%; /* Limit the width of the content */
+    margin: 0 auto; /* Center the content */
+    padding: 1%; /* Padding around the content */
+}
+.description {
+    display: flex; /* Use flexbox to align items */
+    flex-direction: column; /* Stack items vertically */
+    align-items: flex-start; /* Align items to the start of the container */
+    gap: 2px; /* Space between the image and the heading */
+    max-width: 80%; /* Limit the width of the content */
+    margin: 0 auto; /* Center the content */
+    padding: 2px; /* Padding around the content */
+}
+.description p {
+    margin-bottom: 0; /* Remove extra space below each paragraph */
+    padding: 2px 0; /* Adjust padding for breathing room */
 }
 
 #game-container {
-    position: absolute;
-    bottom: 0px;
-    left: 0;
+    flex: 1;
+    display: flex; /* Use flexbox to align items */
     width: 100%;
-    height: 600px;
-    display: flex;
-    align-items: flex-end;
+    position: relative; /* Ensure it stays positioned correctly */
 }
 
 /* Style for the header image */
@@ -66,6 +82,7 @@ p {
     position: absolute;
     bottom: 20px;
     width: 100%;
+    height: 100px;
     display: none;
     justify-content: space-around;
     pointer-events: none; /* Prevents buttons from blocking game canvas touch */
@@ -96,8 +113,6 @@ p {
     }
 
     #game-container {
-        bottom: 120px;
-        height: auto;
+        bottom: 180px;
     }
-
 }

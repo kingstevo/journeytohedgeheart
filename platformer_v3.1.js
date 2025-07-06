@@ -53,7 +53,7 @@ Next version of J2HH
 
 */
 
-let dateOfMeetingInSeconds = new Date("2025-03-15T13:00:00");
+let dateOfMeetingInSeconds = new Date("2025-03-15T13:00:00"); // no longer relevant if counting up from now
 
 let platformSpeed = 1;
 let platToVelFactor = 60;
@@ -64,6 +64,7 @@ let gameSpeedUpFactor = 0.2; // addition to platform speed each interval
 let obstacleMinGap = 4000;
 let obstacleMaxGap = 9000;
 
+let highScore = 0; // move this to DB storage to remember high score between sessions
 
 let fontFamily = 'Nunito';
 
@@ -82,16 +83,17 @@ let inputState = {
 let obstaclesArray = [];
 let ground, groundCollider;
 
-let score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
+let score = 0;
 let scoreText;
 let gameClock = 0;
+let rainbowOnScreen = false;
 
 // let buttonGroup;
 
 let playerLRSoundCooldown = 250; // Cooldown time in milliseconds
 let lastplayerLRSoundTime = 0; // Timestamp of the last time the sound played
 
-let AIControl = true; // set to false to turn off websocket activity
+let AIControl = false; // set to false to turn off websocket activity
 let socket;
 let WSreconnectInterval = 3000;
 let WSretryCount = 0;
@@ -105,11 +107,10 @@ var config = {
     parent: 'game-container',
     width: 800,
     height: 600,
+
     scale: {
         mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
-        //width: window.innerWidth,
-        //height: '100%',
+        autoCenter: Phaser.Scale.CENTER_VERTICALLY,
     },
     backgroundColor: '#87CEEB', // Light blue sky color
     physics: {
@@ -130,16 +131,18 @@ const game = new Phaser.Game(config);
 
 function preload() {
     this.load.spritesheet('tiles', 'assets/tiles.png', { frameWidth: 70, frameHeight: 70 });
-    this.load.image('hedgehog', 'assets/hedgehog.png');
+    this.load.image('hedgehog', 'assets/hedgehogShades.png');
     this.load.image('flamingo', 'assets/flamingo.png');
     this.load.image('crab', 'assets/crab.png');
     this.load.image('cactusL', 'assets/cactus.png');
     this.load.image('cactusS', 'assets/cactus.png');
     this.load.image('bird', 'assets/bird.png');
     this.load.image('cloud', 'assets/cloud.png');
+    this.load.image('rainbow', 'assets/rainbow.png');
     this.load.image('eagle', 'assets/eagle.png');
     this.load.image('lizard', 'assets/lizard.png');
     this.load.image('zebra', 'assets/zebra.png');
+    this.load.image('unicorn', 'assets/unicorn.png');
     this.load.image('cyanHeart', 'assets/cyanHeart.png');
     this.load.audio('obstacleHit', 'assets/sounds/obstacleHit.mp3');
     this.load.audio('obstaclePass', 'assets/sounds/obstaclePass.mp3');
@@ -153,12 +156,27 @@ function create() {
     sceneW = this.scale.width;
     sceneH = this.scale.height;
 
+      // Create a gradient background
+      let gradient = this.add.graphics();
+      gradient.createGeometryMask();
+
+      // Define the gradient colors
+      gradient.fillGradientStyle(
+          0x87CEEB, // Top left (light blue)
+          0x87CEEB, // Top right
+          0xFFFFFF, // Bottom left (white)
+          0xFFFFFF, // Bottom right
+          1
+      );
+      gradient.fillRect(0, 0, sceneW, sceneH);
+
     // set the boundaries of our game world
     this.physics.world.bounds.width = sceneW;
     this.physics.world.bounds.height = sceneH;
 
     // Add a scrolling ground using tileSprite
     ground = this.add.tileSprite(sceneW / 2, groundHeight, sceneW, 70, 'tiles', 2);
+    ground.depth = 1;
 
     // create the player sprite    
     player = this.physics.add.sprite(0, 0, 'hedgehog');
@@ -177,12 +195,13 @@ function create() {
     groundCollider.create(sceneW / 2, groundHeight - 28, 'tiles', 2).setDisplaySize(sceneW * 1.2, 0).refreshBody();
     this.physics.add.collider(player, groundCollider);
 
-    scoreText = this.add.text(20, sceneH - 40, 'Score: ' + convertSecondsIntoText(score), {
+    scoreText = this.add.text(20, sceneH - 40, 'Score: ' + convertSecondsIntoText(score) + ' High score: ' + convertSecondsIntoText(highScore), {
         fontSize: '20px',
         fill: '#ffffff',
         fontFamily: fontFamily
     });
     scoreText.setScrollFactor(0);
+    scoreText.setDepth(100); // Set the depth to ensure it appears above other objects
 
     // Combine both keyboard and touch controls
     setupControls.call(this);
@@ -227,7 +246,7 @@ function create() {
     this.playerLRSound = this.sound.add('playerLR', { volume: 0.2 });
     this.winnerSound = this.sound.add('winner');
 
-    if(AIControl) connectWebSocket(this, playButton);
+    if (AIControl) connectWebSocket(this, playButton);
 }
 
 function connectWebSocket(scene, button) {
@@ -280,7 +299,8 @@ function startGame(scene, killButton) {
     gameState = 'during';
     gameClock = 0;
     platformSpeed = 2;
-    score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
+    score = 0;
+    highScore = highScore; // keep the high score
     obstaclesArray = [];
     winner = false;
 
@@ -305,9 +325,14 @@ function countGameTime() {
 
     if (gameState === 'during') gameClock += 1;
 
-    // decrease score time by 1 sec
-    if (score > 0) {
-        score -= 1; // Decrement score by one second
+    // increase score time by 1 sec
+    if (gameClock > 0) {
+        score += 1; // Increment score by one second
+    }
+
+    // update high score if current score is greater than highscore
+    if (score > highScore) {
+        highScore = score;
     }
 
     // increase platform speed and score multiples as the game progresses (every 20s)
@@ -316,8 +341,6 @@ function countGameTime() {
         this.obstaclePassSound.setRate(this.obstaclePassSound.rate + 0.05);
     }
 
-    // // for game state testing
-    // gameStatusResponse()["state"].forEach(row => console.log(row.join('')));;
 }
 
 function addObstacleWithRandomDelay() {
@@ -346,7 +369,8 @@ function addObstacle() {
             { name: 'bird', speedFactor: 2, startingHeight: 250, gravity: -gravity, width: 80, xOffset: 0, tween: 'updown', depth: 8, score: 7200 },
             { name: 'cactusCluster', speedFactor: 1, startingHeight: 450, gravity: gravity, width: 80, xOffset: 0, tween: false, depth: 5, score: 18000 },
             { name: 'eagle', speedFactor: 4, startingHeight: 150, gravity: -gravity, width: 100, xOffset: 0, tween: 'divebomb', depth: 11, score: 1000 },
-            { name: 'zebra', speedFactor: 3, startingHeight: 450, gravity: gravity, width: 180, xOffset: 0, tween: 'trot', depth: 11, score: 10000 },
+           // { name: 'zebra', speedFactor: 3, startingHeight: 450, gravity: gravity, width: 180, xOffset: 0, tween: 'trot', depth: 11, score: 10000 },
+            { name: 'unicorn', speedFactor: 3, startingHeight: 450, gravity: gravity, width: 180, xOffset: 0, tween: 'trot', depth: 11, score: 10000 },
             { name: 'lizard', speedFactor: 5, startingHeight: 480, gravity: gravity, width: 70, xOffset: 0, tween: 'wobble', depth: 11, score: 0 }
         ];
 
@@ -565,7 +589,7 @@ function hitObstacle(player, obstacle) {
         scoreText.setText('Congratulations! You made it to Hedgeheart!');
     } else {
         playerCollisionByee(this, player);
-        scoreText.setText('Journey Over! Only ' + convertSecondsIntoText(score) + ' to go to Hedgeheart');
+        scoreText.setText('Journey Over! You travelled ' + convertSecondsIntoText(score) + ' from Hedgeheart');
     }
 
     playAgainButton = addButton(this, 'Play again?');
@@ -695,31 +719,61 @@ function addCloudsWithRandomDelay() {
 
 function littleFluffyClouds() {
 
-    // create the obstacle sprite
     randomHeight = Phaser.Math.Between(100, 350);
-    cloud = this.physics.add.sprite(sceneW + 100, randomHeight, 'cloud'); // set to appear off screen to the right
+    randomSize = 300 - (randomHeight * 0.5);
 
-    //randomSize = Phaser.Math.Between(100, 250); // bigger clouds at the back
-    randomSize = 300 - (randomHeight * 0.5); // bigger clouds at the back
+    rainbowWidth = 600; // width of the rainbow
 
-    cloud.displayWidth = randomSize; // change this up and down to create cluster
-    cloud.scaleY = cloud.scaleX; // extra line to scale the image proportional
+    // sometimes add a rainbow
+    rainbowOrCloud = Phaser.Math.Between(0, 10); // 1 in 10 chance of a rainbow
 
-    // Set transparency (alpha)
-    randomTrans = Phaser.Math.Between(5, 8);
-    cloud.setAlpha(randomTrans / 10);  // Set 50-80% transparency
+    if (rainbowOrCloud < 1.1 && rainbowOnScreen === false) { // only add a rainbow if there is not one on screen already
+        rainbowOnScreen = true; // set the flag to true so we don't add another rainbow
 
-    // Apply a blur effect using a blur shader (if supported by the browser)
-    //const fx = cloud.preFX.addBlur(quality=0, strength=0);
+        rainbow = this.physics.add.sprite(sceneW + 300, 480, 'rainbow'); // set to appear off screen to the right
+        rainbow.displayWidth = rainbowWidth;
+        rainbow.scaleY = rainbow.scaleX; // extra line to scale the image proportional
+        rainbow.setAlpha(0.4); 
+        rainbow.setDepth(0); // Depth of 0 puts it behind everything else
 
-    // Place the sprite behind others using depth
-    cloud.setDepth(0); // Depth of 0 puts it behind everything else
+        // Set gravity and horizontal velocity to scroll the rainbow from right to left
+        rainbow.body.setGravityY(-gravity);  // gravity applied to each rainbow
+        rainbow.body.setVelocityX(-platformSpeed * platToVelFactor * 0.8 );
 
-    // Set gravity and horizontal velocity to scroll the cloud from right to left
-    cloud.body.setGravityY(-gravity);  // gravity applied to each cloud
+        this.time.addEvent({
+            delay: platToVelFactor * rainbowWidth, // wait for the rainbow
+            callback: () => {
+                rainbowOnScreen = false; // reset the flag so we can add a new rainbow
+            },
+            callbackScope: this,
+            loop: false
+        });
 
-    randomSpeed = 1 / (randomSize / 250); // the larger the cloud the slower it goes
-    cloud.body.setVelocityX(-platformSpeed * platToVelFactor * randomSpeed);  // flex this up and down to get paralax
+    } else {
+
+
+        // create the obstacle sprite
+        cloud = this.physics.add.sprite(sceneW + 200, randomHeight, 'cloud'); // set to appear off screen to the right
+
+        cloud.displayWidth = randomSize; // change this up and down to create cluster
+        cloud.scaleY = cloud.scaleX; // extra line to scale the image proportional
+
+        // Set transparency (alpha)
+        randomTrans = Phaser.Math.Between(5, 8);
+        cloud.setAlpha(randomTrans / 10);  // Set 50-80% transparency
+
+        // Apply a blur effect using a blur shader (if supported by the browser)
+        //const fx = cloud.preFX.addBlur(quality=0, strength=0);
+
+        // Place the sprite behind others using depth
+        cloud.setDepth(0); // Depth of 0 puts it behind everything else
+
+        // Set gravity and horizontal velocity to scroll the cloud from right to left
+        cloud.body.setGravityY(-gravity);  // gravity applied to each cloud
+
+        randomSpeed = 1 / (randomSize / 250); // the larger the cloud the slower it goes
+        cloud.body.setVelocityX(-platformSpeed * platToVelFactor * randomSpeed);  // flex this up and down to get paralax
+    }
 
     addCloudsWithRandomDelay.call(this);
 }
@@ -728,7 +782,7 @@ function showPassedCelebration(scene, obstacle) {
     //obstacle.setTint(0x00ff00);  // Flash to show passed
     // Create text over the obstacle
     if (obstacle.score > 0) {
-        let scoreFlash = scene.add.text(obstacle.x, obstacle.y - 50, '- ' + convertSecondsIntoText(obstacle.score), {
+        let scoreFlash = scene.add.text(obstacle.x, obstacle.y - 50, convertSecondsIntoText(obstacle.score), {
             fontSize: '32px',
             fill: '#ff0',
             fontFamily: fontFamily,
@@ -851,7 +905,7 @@ function update() {
     obstaclesArray.forEach((obstacle) => {
         if (!obstacle.passed && player.x > obstacle.x) {
             // Increment score if the player passes the obstacle
-            score -= obstacle.score;
+            score += obstacle.score;
             showPassedCelebration(this, obstacle);
             obstacle.passed = true;  // Mark the obstacle as passed to avoid counting it again
         }
@@ -867,11 +921,11 @@ function update() {
 
     // set the text to show the current score 
     // convert score in seconds to days,hours, mins and seconds
-    text = 'Time to Hedgeheart: ' + convertSecondsIntoText(score);
+    text = 'Time from Hedgeheart: ' + convertSecondsIntoText(score) + ' | Highscore: ' + convertSecondsIntoText(highScore);
     if (config.physics.arcade.debug) text += ' GameClock: ' + gameClock + ' Platform Speed: ' + platformSpeed;
     scoreText.setText(text);
 
-    if (score < 10 && winner == false && gameState === 'during') {
+    if (score > 1000000 && winner == false && gameState === 'during') {
         // 10 second to the end add heart obstacle
         winner = true;
         renderObstacle(this, { name: 'cyanHeart', speedFactor: 3, startingHeight: 350, gravity: 0, width: 400, xOffset: 0, tween: 'winnerHeart', depth: 1, score: 0 });
@@ -948,10 +1002,10 @@ function convertSecondsIntoText(totalSeconds) {
     const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
     const seconds = Math.round(totalSeconds % 60);
 
-    return [
-        days > 0 ? `${days} ${days === 1 ? 'day' : 'days'}` : '',
-        hours > 0 ? `${hours} ${hours === 1 ? 'hour' : 'hours'}` : '',
-        minutes > 0 ? `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}` : '',
-        seconds > 0 ? `${seconds} ${seconds === 1 ? 'second' : 'seconds'}` : ''
-    ].filter(Boolean).join(' ') || '0 seconds';
+    return [ 
+        days > 0 ? `${days}${days === 1 ? 'd ' : 'd '}` : '',
+        hours > 0 ? `${hours}${hours === 1 ? 'h ' : 'h '}` : '',
+        minutes > 0 ? `${minutes}${minutes === 1 ? 'm ' : 'm '}` : '',
+        seconds > 0 ? `${seconds}${seconds === 1 ? 's ' : 's'}` : ''
+    ].filter(Boolean).join(' ') || '0s';
 }

@@ -13,29 +13,31 @@
 
 <body>
 
-    <script src="platformer_v3.js"></script>
-
-    <div class="mobile-controls">
-        <button id="left-btn">◀</button>
-        <button id="jump-btn">▲</button>
-        <button id="right-btn">▶</button>
-    </div>
-
     <div class="container">
         <div class="headerContent">
             <img src="assets/hedgefavicon.png" alt="Journey to Hedgeheart logo" class="headerImage">
             <h1>Journey to Hedgeheart</h1>
         </div>
-        <p>Embark on one snuggly hedgehog's journey to find love!
-            Jump and duck past dancing crabs, laughing birds, spiky cacti, and wobbly
-            flamingos. Watch the "hedgeheart" timer get closer with each obstacle you
-            pass. When the time reaches zero, it's <i>time for love!</i></p>
-        <p>Use the up arrow or space bar to jump, and the left and right arrow keys or
-            on-screen controls for mobile devices to move.</p>
+        <div class="description">
+            <p>Welcome to <strong>Journey to Hedgeheart</strong>, a delightful platformer game
+                where you play as a hedgehog on a quest for love!</p>
+            <p>Embark on one snuggly hedgehog's journey to find love!
+                Jump and duck past dancing crabs, laughing birds, spiky cacti, and wobbly
+                flamingos. Watch the "hedgeheart" timer increase as you get closer to your goal, and try to beat your high score.</p>
+            <p>Use the up arrow or space bar to jump, and the left and right arrow keys or
+                on-screen controls for mobile devices to move.</p>
+        </div>
+
+        <div id="game-container"></div>
+
+        <div class="mobile-controls">
+            <button id="left-btn">◀</button>
+            <button id="jump-btn">▲</button>
+            <button id="right-btn">▶</button>
+        </div>
     </div>
 
-    <div id="game-container"></div>
-
+    <script src="platformer_v3.1.js"></script>
 </body>
 
 </html>
