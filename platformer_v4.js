@@ -52,12 +52,16 @@ let ground, groundCollider;
 
 let score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
 let scoreText;
+let highscoreText;
 let gameClock = 0;
+let highscore = parseInt(localStorage.getItem('j2hh_highscore') || '0');
 
 // let buttonGroup;
 
 let playerLRSoundCooldown = 250; // Cooldown time in milliseconds
 let lastplayerLRSoundTime = 0; // Timestamp of the last time the sound played
+
+let shadesEquipped = false;
 
 let AIControl = false; // set to false to turn off websocket activity
 let socket;
@@ -108,6 +112,9 @@ function preload() {
     this.load.image('eagle', 'assets/eagle.png');
     this.load.image('lizard', 'assets/lizard.png');
     this.load.image('zebra', 'assets/zebra.png');
+    this.load.image('unicorn', 'assets/unicorn.png');
+    this.load.image('hedgehogShades', 'assets/hedgehogShades.png');
+    this.load.image('rainbow', 'assets/rainbow.png');
     this.load.image('cyanHeart', 'assets/cyanHeart.png');
     this.load.audio('obstacleHit', 'assets/sounds/obstacleHit.mp3');
     this.load.audio('obstaclePass', 'assets/sounds/obstaclePass.mp3');
@@ -155,6 +162,13 @@ function create() {
     });
     scoreText.setScrollFactor(0);
 
+    highscoreText = this.add.text(20, sceneH - 65, 'Best: ' + convertSecondsIntoText(highscore), {
+        fontSize: '16px',
+        fill: '#ffdd00',
+        fontFamily: fontFamily
+    });
+    highscoreText.setScrollFactor(0);
+
     // Combine both keyboard and touch controls
     setupControls.call(this);
 
@@ -179,8 +193,14 @@ function create() {
     // Spawn obstacles with random delay
     addObstacleWithRandomDelay.call(this);
 
+    // Occasionally spawn the sunglasses costume collectible
+    addShadesWithRandomDelay.call(this);
+
     // Add some clouds in the background
     addCloudsWithRandomDelay.call(this);
+
+    // Add a rainbow occasionally in the background
+    addRainbowWithRandomDelay.call(this);
 
     // Subtract from the score every second
     this.time.addEvent({
@@ -254,6 +274,7 @@ function startGame(scene, killButton) {
     score = Math.round((dateOfMeetingInSeconds - Date.now()) / 1000);
     obstaclesArray = [];
     winner = false;
+    shadesEquipped = false;
 
     if (killButton) {
         // Tween for fading in the button background
@@ -285,6 +306,7 @@ function countGameTime() {
     if ((gameClock > 0) && (gameClock % gameSpeedUpInterval === 0)) {
         platformSpeed += gameSpeedUpFactor;
         this.obstaclePassSound.setRate(this.obstaclePassSound.rate + 0.05);
+        updateDayNightCycle(this);
     }
 
     // // for game state testing
@@ -318,7 +340,8 @@ function addObstacle() {
             { name: 'cactusCluster', speedFactor: 1, startingHeight: 450, gravity: gravity, width: 80, xOffset: 0, tween: false, depth: 5, score: 18000 },
             { name: 'eagle', speedFactor: 4, startingHeight: 150, gravity: -gravity, width: 100, xOffset: 0, tween: 'divebomb', depth: 11, score: 1000 },
             { name: 'zebra', speedFactor: 3, startingHeight: 450, gravity: gravity, width: 180, xOffset: 0, tween: 'trot', depth: 11, score: 10000 },
-            { name: 'lizard', speedFactor: 5, startingHeight: 480, gravity: gravity, width: 70, xOffset: 0, tween: 'wobble', depth: 11, score: 0 }
+            { name: 'lizard', speedFactor: 5, startingHeight: 480, gravity: gravity, width: 70, xOffset: 0, tween: 'wobble', depth: 11, score: 0 },
+            { name: 'unicorn', speedFactor: 2.5, startingHeight: 460, gravity: gravity, width: 150, xOffset: 0, tween: 'trot', depth: 10, score: 14400 }
         ];
 
         // Randomly select an obstacle - change this to add more obstacles over time
@@ -531,6 +554,12 @@ function hitObstacle(player, obstacle) {
     ground.tilePositionX = 0; // Stop ground movement
     this.physics.pause();  // End game on collision
 
+    // Update highscore: lower score (closer to meeting) is better
+    if (highscore === 0 || score < highscore) {
+        highscore = score;
+        localStorage.setItem('j2hh_highscore', highscore);
+    }
+
     if (obstacle.parameters.name === 'cyanHeart') {
         playerCollisionWinner(this, player);
         scoreText.setText('Congratulations! You made it to Hedgeheart!');
@@ -695,6 +724,97 @@ function littleFluffyClouds() {
     addCloudsWithRandomDelay.call(this);
 }
 
+function addShadesWithRandomDelay() {
+    if (gameState != 'after' && !shadesEquipped) {
+        let delay = Phaser.Math.Between(20000, 50000);
+        this.time.addEvent({
+            delay: delay,
+            callback: spawnShades,
+            callbackScope: this,
+            loop: false
+        });
+    }
+}
+
+function spawnShades() {
+    if (gameState != 'during' || shadesEquipped) return;
+    let shades = this.physics.add.sprite(sceneW + 50, 430, 'hedgehogShades');
+    shades.displayWidth = 70;
+    shades.scaleY = shades.scaleX;
+    shades.setDepth(10);
+    shades.body.setGravityY(gravity);
+    shades.body.setVelocityX(-platformSpeed * platToVelFactor);
+    this.physics.add.collider(shades, groundCollider);
+
+    // Tween to make it bob enticingly
+    this.tweens.add({
+        targets: shades,
+        y: shades.y - 20,
+        ease: 'Sine.easeInOut',
+        duration: 400,
+        yoyo: true,
+        repeat: -1
+    });
+
+    // Overlap: player collects the shades
+    this.physics.add.overlap(player, shades, () => {
+        if (!shadesEquipped) {
+            shadesEquipped = true;
+            player.setTexture('hedgehogShades');
+            shades.destroy();
+            // Flash effect
+            this.tweens.add({
+                targets: player,
+                alpha: 0,
+                duration: 100,
+                yoyo: true,
+                repeat: 3
+            });
+        }
+    }, null, this);
+
+    // If not collected, try again later
+    this.time.addEvent({
+        delay: 15000,
+        callback: () => {
+            if (shades && shades.active) shades.destroy();
+            addShadesWithRandomDelay.call(this);
+        },
+        callbackScope: this,
+        loop: false
+    });
+}
+
+function addRainbowWithRandomDelay() {
+    if (gameState != 'after') {
+        let delay = Phaser.Math.Between(15000, 40000);
+        this.time.addEvent({
+            delay: delay,
+            callback: spawnRainbow,
+            callbackScope: this,
+            loop: false
+        });
+    }
+}
+
+function spawnRainbow() {
+    let rainbow = this.physics.add.sprite(sceneW + 400, Phaser.Math.Between(100, 300), 'rainbow');
+    rainbow.displayWidth = 600;
+    rainbow.scaleY = rainbow.scaleX;
+    rainbow.setDepth(1);
+    rainbow.setAlpha(0.5);
+    rainbow.body.setGravityY(-gravity);
+    rainbow.body.setVelocityX(-platformSpeed * platToVelFactor * 0.3);
+    this.tweens.add({
+        targets: rainbow,
+        alpha: 0,
+        duration: 8000,
+        ease: 'Linear',
+        onComplete: () => rainbow.destroy()
+    });
+    addRainbowWithRandomDelay.call(this);
+}
+
 function showPassedCelebration(scene, obstacle) {
     //obstacle.setTint(0x00ff00);  // Flash to show passed
     // Create text over the obstacle
@@ -836,11 +956,12 @@ function update() {
         }
     });
 
-    // set the text to show the current score 
+    // set the text to show the current score
     // convert score in seconds to days,hours, mins and seconds
     text = 'Time to Hedgeheart: ' + convertSecondsIntoText(score);
     if (config.physics.arcade.debug) text += ' GameClock: ' + gameClock + ' Platform Speed: ' + platformSpeed;
     scoreText.setText(text);
+    highscoreText.setText('Best: ' + convertSecondsIntoText(highscore));
 
     if (score < 10 && winner == false && gameState === 'during') {
         // 10 second to the end add heart obstacle
@@ -911,6 +1032,23 @@ function playerLRSoundWithCoolDown(scene) {
         scene.playerLRSound.play();
         lastplayerLRSoundTime = currentTime; // Update the last sound time
     }
+}
+
+function updateDayNightCycle(scene) {
+    // Gradually shift sky from day blue (#87CEEB) to night (#0a0a2e) over 10 speed increments
+    const maxSteps = 10;
+    const step = Math.min(Math.floor((platformSpeed - 2) / gameSpeedUpFactor), maxSteps);
+
+    const dayR = 0x87, dayG = 0xCE, dayB = 0xEB;
+    const nightR = 0x0a, nightG = 0x0a, nightB = 0x2e;
+
+    const t = step / maxSteps;
+    const r = Math.round(dayR + (nightR - dayR) * t);
+    const g = Math.round(dayG + (nightG - dayG) * t);
+    const b = Math.round(dayB + (nightB - dayB) * t);
+
+    const color = (r << 16) | (g << 8) | b;
+    scene.cameras.main.setBackgroundColor(color);
 }
 
 function convertSecondsIntoText(totalSeconds) {
