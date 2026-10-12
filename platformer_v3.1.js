@@ -110,7 +110,7 @@ var config = {
 
     scale: {
         mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_VERTICALLY,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     backgroundColor: '#87CEEB', // Light blue sky color
     physics: {
