@@ -35,9 +35,17 @@ p {
     display: flex;
     flex-direction: column; /* Stack child elements vertically */
     height: 100vh; /* Full viewport height */
+    height: 100dvh; /* Excludes mobile browser toolbars where supported */
     width: 100%; /* Full width */
     padding: 0;
     margin: 0;
+}
+
+/* Header and text keep their natural height; the game takes what is left */
+.headerContent,
+.description,
+.container > p {
+    flex: none;
 }
 
 .headerContent {
@@ -63,10 +71,15 @@ p {
 }
 
 #game-container {
-    flex: 1;
-    display: flex; /* Use flexbox to align items */
+    flex: 1 1 auto;
+    min-height: 0; /* Let the container shrink below the canvas size so Phaser can fit the canvas into it */
     width: 100%;
-    position: relative; /* Ensure it stays positioned correctly */
+    position: relative;
+    overflow: hidden;
+}
+
+#game-container canvas {
+    display: block; /* Avoid the inline baseline gap under the canvas */
 }
 
 /* Style for the header image */
@@ -77,13 +90,13 @@ p {
     border-radius: 5%; /* Optional: makes the image circular */
 }
 
-/* Style for buttons */
+/* Style for buttons: sit in the page flow below the game so they never cover it */
 .mobile-controls {
-    position: absolute;
-    bottom: 20px;
+    flex: none;
     width: 100%;
     height: 100px;
-    display: none;
+    padding-bottom: 10px;
+    align-items: center;
     justify-content: space-around;
     pointer-events: none; /* Prevents buttons from blocking game canvas touch */
     display: none; /* start hidden, show if device has touch */
@@ -106,13 +119,38 @@ p {
     user-select: none; /* stop text being selected */
 }
 
-/* Media query: Hide buttons on desktop */
-@media only screen and (max-width: 767px) and (pointer: coarse) {
+/* Show buttons on touch devices only */
+@media (pointer: coarse) {
     .mobile-controls {
         display: flex;
     }
+}
 
-    #game-container {
-        bottom: 180px;
+/* Short screens (small phones, phones in landscape): drop the intro text so the game has room */
+@media (max-height: 700px) {
+    .description,
+    .container > p {
+        display: none;
+    }
+
+    h1 {
+        font-size: 1.4em;
+        margin: 5px 0;
+    }
+
+    .headerImage {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-height: 450px) {
+    .mobile-controls {
+        height: 70px;
+    }
+
+    .mobile-controls button {
+        width: 60px;
+        height: 60px;
     }
 }
