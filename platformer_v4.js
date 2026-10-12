@@ -363,6 +363,65 @@ function addObstacle() {
     addObstacleWithRandomDelay.call(this);
 }
 
+// Pixel-accurate collision. Arcade bodies are the images' full rectangles, transparent
+// corners included, so they only act as a first check. When they touch, this compares the
+// opaque pixels of both sprites and the game ends only if those actually overlap.
+let alphaMasks = {};
+const alphaThreshold = 128; // pixels this opaque or more count as solid
+const pixelCheckStep = 2; // screen pixels between samples in the overlap area
+const transformMatrixA = new Phaser.GameObjects.Components.TransformMatrix();
+const transformMatrixB = new Phaser.GameObjects.Components.TransformMatrix();
+const localPoint = new Phaser.Math.Vector2();
+
+function getAlphaMask(sprite) {
+    const key = sprite.texture.key;
+    if (!alphaMasks[key]) {
+        const image = sprite.texture.getSourceImage();
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        context.drawImage(image, 0, 0);
+        alphaMasks[key] = {
+            width: image.width,
+            height: image.height,
+            data: context.getImageData(0, 0, image.width, image.height).data
+        };
+    }
+    return alphaMasks[key];
+}
+
+function isOpaqueAt(sprite, mask, matrix, x, y) {
+    // map the world point back into the sprite's image pixels (undoes position, scale, rotation)
+    matrix.applyInverse(x, y, localPoint);
+    let u = Math.floor(localPoint.x + sprite.displayOriginX);
+    let v = Math.floor(localPoint.y + sprite.displayOriginY);
+    if (sprite.flipX) u = mask.width - 1 - u;
+    if (sprite.flipY) v = mask.height - 1 - v;
+    if (u < 0 || v < 0 || u >= mask.width || v >= mask.height) return false;
+    return mask.data[(v * mask.width + u) * 4 + 3] >= alphaThreshold;
+}
+
+function pixelsOverlap(spriteA, spriteB) {
+    const area = Phaser.Geom.Rectangle.Intersection(spriteA.getBounds(), spriteB.getBounds());
+    if (area.isEmpty()) return false;
+
+    const maskA = getAlphaMask(spriteA);
+    const maskB = getAlphaMask(spriteB);
+    spriteA.getWorldTransformMatrix(transformMatrixA);
+    spriteB.getWorldTransformMatrix(transformMatrixB);
+
+    for (let y = area.top; y < area.bottom; y += pixelCheckStep) {
+        for (let x = area.left; x < area.right; x += pixelCheckStep) {
+            if (isOpaqueAt(spriteA, maskA, transformMatrixA, x, y) &&
+                isOpaqueAt(spriteB, maskB, transformMatrixB, x, y)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 function renderObstacle(scene, obs) {
     // create the obstacle sprite
     obstacle = scene.physics.add.sprite(sceneW + 50 + obs.xOffset, obs.startingHeight, obs.name);
@@ -541,7 +600,7 @@ function renderObstacle(scene, obs) {
 
     // add collision handler
     scene.physics.add.collider(obstacle, groundCollider);
-    scene.physics.add.collider(player, obstacle, hitObstacle, null, scene);
+    scene.physics.add.collider(player, obstacle, hitObstacle, pixelsOverlap, scene);
 
     obstacle.passed = false;  // Add a custom flag to track if the obstacle has been passed
     obstacle.score = obs.score * platformSpeed;
