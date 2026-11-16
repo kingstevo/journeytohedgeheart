@@ -32,7 +32,7 @@
         #hud-banner {
             position: absolute;
             left: 50%;
-            top: 27%;
+            top: 38%;
             transform: translate(-50%, -50%) scale(1);
             transform-origin: 0 0;
             transition: left 0.8s, top 0.8s, transform 0.8s;
@@ -113,12 +113,10 @@
             50% { transform: rotateX(8deg) rotateY(30deg); }
         }
 
-        /* Next to the scoreboard there is only room for the chip on narrower screens */
-        @media (max-width: 1000px) {
-            #hud-banner.small h1 {
-                opacity: 0;
-                max-width: 0;
-            }
+        /* Once shrunk, the scoreboard carries the title and only the chip remains */
+        #hud-banner.small h1 {
+            opacity: 0;
+            max-width: 0;
         }
 
         @media (max-width: 640px) {
@@ -152,9 +150,8 @@
             position: absolute;
             top: 14px;
             left: 50%;
-            display: flex;
-            gap: 7px;
-            padding: 8px 9px 12px;
+            padding: 6px 9px 10px;
+            text-align: center;
             background: linear-gradient(#3a4387, #262d63);
             border-radius: 16px;
             text-shadow: none;
@@ -166,7 +163,51 @@
                 0 20px 22px rgba(0, 0, 0, 0.4);
         }
 
-        #hud-scoreboard div {
+        /* tiles for the time left, and a row of smaller ones beneath for the best run */
+        #hud-scoreboard .tiles,
+        #hud-best {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+        }
+
+        #hud-title,
+        #hud-best-label {
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        #hud-title {
+            margin-bottom: 5px;
+            font-size: 11px;
+            color: #fff;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        #hud-best-label {
+            margin: 9px 0 3px;
+            font-size: 9px;
+            color: #ffdd00;
+        }
+
+        #hud-best b {
+            padding: 1px 0 2px;
+            font-size: 15px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: #ffdd00;
+            background: #0d1236;
+            border-radius: 6px;
+            box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+
+        #hud-scoreboard .no-best {
+            display: none;
+        }
+
+        #hud-scoreboard .tile {
             position: relative;
             min-width: 58px;
             padding: 5px 6px 6px;
@@ -179,7 +220,7 @@
                 0 7px 8px rgba(0, 0, 0, 0.45);
         }
 
-        #hud-scoreboard b {
+        #hud-scoreboard .tile b {
             display: block;
             font-size: 30px;
             line-height: 1.1;
@@ -188,7 +229,7 @@
             text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6), 0 0 12px rgba(127, 216, 255, 0.35);
         }
 
-        #hud-scoreboard span {
+        #hud-scoreboard .tile span {
             display: block;
             font-size: 10px;
             font-weight: 700;
@@ -241,20 +282,16 @@
             font-size: 20px;
         }
 
-        #hud-best {
-            font-size: 16px;
-            color: #ffdd00;
-        }
-
         @media (max-width: 420px) {
-            #hud-scoreboard div { min-width: 48px; }
-            #hud-scoreboard b { font-size: 24px; }
+            #hud-scoreboard .tile { min-width: 48px; }
+            #hud-scoreboard .tile b { font-size: 24px; }
+            #hud-title { font-size: 10px; }
         }
 
         #hud-button {
             position: absolute;
             left: 50%;
-            top: 56%;
+            top: 80%; /* below the hedgehog, so its tricks and tumbles stay in view */
             transform: translate(-50%, -50%);
             min-width: 200px;
             white-space: nowrap;
@@ -283,10 +320,15 @@
         <div id="hud">
             <div id="hud-flash"></div>
             <div id="hud-scoreboard" aria-label="Time to Hedgeheart">
-                <div><b>0</b><span>days</span></div>
-                <div><b>00</b><span>hrs</span></div>
-                <div><b>00</b><span>min</span></div>
-                <div><b>00</b><span>sec</span></div>
+                <div id="hud-title">Journey to Hedgeheart</div>
+                <div class="tiles">
+                    <div class="tile"><b>0</b><span>days</span></div>
+                    <div class="tile"><b>00</b><span>hrs</span></div>
+                    <div class="tile"><b>00</b><span>min</span></div>
+                    <div class="tile"><b>00</b><span>sec</span></div>
+                </div>
+                <div id="hud-best-label" class="no-best">Best</div>
+                <div id="hud-best" class="no-best"><b></b><b></b><b></b><b></b></div>
             </div>
             <div id="hud-banner">
                 <div class="banner-float">
@@ -298,7 +340,6 @@
                 </div>
             </div>
             <div id="hud-text">
-                <div id="hud-best"></div>
                 <div id="hud-message"></div>
             </div>
             <button id="hud-mute" aria-label="Sound on or off"></button>

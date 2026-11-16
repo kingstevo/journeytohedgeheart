@@ -70,7 +70,7 @@ let startingReward = 0;
 
 // three.js plumbing
 let renderer, scene, camera, clock;
-let container, hud, scoreboard, messageText, highscoreText, hudButton;
+let container, hud, scoreboard, messageText, hudButton;
 let chips = [];                  // the 3D score chips floating over passed obstacles
 let textures = {};
 let pathTexture, grassTexture, pathMaterial, grassMaterial;
@@ -121,7 +121,6 @@ function create() {
     hud = document.getElementById('hud');
     scoreboard = document.getElementById('hud-scoreboard');
     messageText = document.getElementById('hud-message');
-    highscoreText = document.getElementById('hud-best');
     hudButton = document.getElementById('hud-button');
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -459,6 +458,7 @@ function burst(kind, x, y, z, count, speed) {
         mesh.position.set(x, y, z);
         mesh.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
         const size = type.size * (0.6 + Math.random() * 0.8);
+        mesh.scale.setScalar(size);
         scene.add(mesh);
         particles.push({
             mesh, type, size, age: 0, life: type.life * (0.6 + Math.random() * 0.6),
@@ -557,7 +557,10 @@ function createPlayer() {
         stride: 0,        // where the legs are in their running cycle
         bump: 0,          // sideways jolt after walking into a ledge
         flash: 0,
-        hit: null         // the knock-out animation in progress, if any
+        hit: null,        // the knock-out animation in progress, if any
+        trick: null,      // the hop or roll it is showing off while waiting to start
+        trickIn: 1.2,     // seconds until the next one
+        tricksDone: 0
     };
     glowPlayer(null);
 }
@@ -716,6 +719,7 @@ function startGame() {
     player.bump = 0;
     player.flash = 0;
     player.hit = null;
+    player.trick = null;
     player.shades.visible = false;
     player.stars.visible = false;
     player.model.visible = true;
@@ -1256,13 +1260,23 @@ function removeChip(chip) {
 }
 
 // Show the countdown as a scoreboard: one tile each for days, hours, minutes and seconds
-let scoreboardShowing = '';
+let scoreboardShowing = '', bestShowing = null;
 function updateScoreboard() {
     const cells = timeCells(score, true);
     const showing = cells.map((cell) => cell.text).join(':');
-    if (showing === scoreboardShowing) return;
-    scoreboardShowing = showing;
-    cells.forEach((cell, i) => scoreboard.children[i].firstElementChild.textContent = cell.text);
+    if (showing !== scoreboardShowing) {
+        scoreboardShowing = showing;
+        const tiles = scoreboard.querySelectorAll('.tile b');
+        cells.forEach((cell, i) => tiles[i].textContent = cell.text);
+    }
+
+    // the best run so far, in a smaller row beneath
+    if (highscore !== bestShowing) {
+        bestShowing = highscore;
+        const best = document.getElementById('hud-best');
+        timeCells(highscore, true).forEach((cell, i) => best.children[i].textContent = cell.text);
+        [best, document.getElementById('hud-best-label')].forEach((row) => row.classList.toggle('no-best', !(highscore > 0)));
+    }
 }
 
 // ---------------------------------------------------------------- sound
@@ -1752,7 +1766,6 @@ function update() {
 
     updateScoreboard();
     updateChips(dt);
-    highscoreText.textContent = highscore > 0 ? 'Best: ' + convertSecondsIntoText(highscore) : '';
 
     if (score < 10 && winner == false && gameState === 'during') {
         // 10 seconds from the end the heart appears, right across the track
@@ -1894,6 +1907,9 @@ function updatePlayer(dt) {
         const turn = -clamp(dx * 0.8 + player.bump, -1, 1);
         player.group.rotation.z = -dx * 0.1 - player.bump * 0.4;
 
+        // while waiting for the game to start, it shows off
+        const flourish = gameState === 'before' ? updateIdleTricks(dt) : { roll: 0, spin: 0 };
+
         // stand on the road, wherever it has got to
         const ground = groundHeight(player.x, 0);
         const wasOnFloor = player.onFloor;
@@ -1906,7 +1922,7 @@ function updatePlayer(dt) {
             player.onFloor = true;
             if (!wasOnFloor && fallSpeed < -4) {
                 burst('dust', player.x, ground + 0.05, 0, 5, 1.5);
-                playSound('land');
+                if (gameState === 'during') playSound('land');
             }
         } else if (wasOnFloor && player.velocityY <= 0 && player.y - ground < 0.4) {
             // keep its feet on the road down the far side of a hump
@@ -1933,7 +1949,7 @@ function updatePlayer(dt) {
             });
             pitch = clamp(player.velocityY * 0.035, -0.4, 0.4); // nose up on the way up
         }
-        player.tumble.rotation.set(pitch, turn, 0);
+        player.tumble.rotation.set(pitch + flourish.roll, turn + flourish.spin, 0);
     }
 
     player.group.position.set(player.x + (player.hit ? 0 : player.bump), player.y + bob, player.z);
@@ -1957,6 +1973,49 @@ function updatePlayer(dt) {
         cameraX + (Math.random() - 0.5) * shake,
         3.7 + cameraLift + (Math.random() - 0.5) * shake,
         6.8);
+}
+
+// Before the game starts the hedgehog entertains itself: a hop, a forward roll,
+// two quick hops, a spin, a backflip, and round again. Returns the extra turn
+// to give its body this frame.
+function updateIdleTricks(dt) {
+    const routine = [
+        { hops: 1, lift: 0.8 },
+        { hops: 1, lift: 1, roll: -1 },    // forward roll
+        { hops: 2, lift: 0.65 },
+        { hops: 1, lift: 0.85, spin: 1 },  // pirouette
+        { hops: 1, lift: 1.05, roll: 1 }   // backflip
+    ];
+    const hop = (lift) => {
+        player.velocityY = jumpVelocity * lift;
+        player.onFloor = false;
+        return 2 * player.velocityY / gravity; // time in the air
+    };
+
+    if (!player.trick) {
+        player.trickIn -= dt;
+        if (player.trickIn > 0 || !player.onFloor) return { roll: 0, spin: 0 };
+        const move = routine[player.tricksDone++ % routine.length];
+        player.trick = { ...move, age: 0, hopsLeft: move.hops - 1, airtime: hop(move.lift) };
+    }
+
+    const trick = player.trick;
+    trick.age += dt;
+    if (trick.age >= trick.airtime && player.onFloor) {
+        if (trick.hopsLeft > 0) {
+            trick.hopsLeft--;
+            trick.age = 0;
+            trick.airtime = hop(trick.lift);
+        } else {
+            player.trick = null;
+            player.trickIn = randomBetween(0.9, 1.8);
+            return { roll: 0, spin: 0 };
+        }
+    }
+    // one full turn, eased in and out, over the time in the air
+    const t = Math.min(1, trick.age / trick.airtime);
+    const turned = (t * t * (3 - 2 * t)) * Math.PI * 2;
+    return { roll: (trick.roll || 0) * turned, spin: (trick.spin || 0) * turned };
 }
 
 function updateDayNightCycle() {
