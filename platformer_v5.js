@@ -725,6 +725,7 @@ function startGame() {
     glowPlayer(null);
 
     messageText.textContent = '';
+    document.getElementById('hud-banner').classList.add('small'); // the title tucks itself into the corner
     hudButton.classList.add('hidden');
     hudButton.blur();
     startMusic();
