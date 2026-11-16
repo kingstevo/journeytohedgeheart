@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#87CEEB">
+    <title>Journey to Hedgeheart 3D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Heads-up display drawn in HTML on top of the 3D canvas */
+        #game-container { touch-action: none; }
+
+        #hud {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #hud-text {
+            position: absolute;
+            left: 20px;
+            right: 20px;
+            bottom: 16px;
+        }
+
+        #hud-score {
+            font-size: 20px;
+        }
+
+        #hud-best {
+            font-size: 16px;
+            color: #ffdd00;
+        }
+
+        #hud-button {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 200px;
+            height: 80px;
+            padding: 0 28px;
+            font: 26px "Nunito", sans-serif;
+            color: #fff;
+            background: rgba(34, 34, 34, 0.3);
+            border: 6px solid rgba(136, 136, 136, 0.5);
+            border-radius: 40px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: opacity 0.5s linear;
+        }
+
+        #hud-button.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .score-flash {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff0;
+            white-space: nowrap;
+            animation: score-flash 1s linear forwards;
+        }
+
+        @keyframes score-flash {
+            to {
+                margin-top: -70px;
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="headerContent">
+            <img src="assets/hedgefavicon.png" alt="Journey to Hedgeheart logo" class="headerImage">
+            <h1>Journey to Hedgeheart 3D</h1>
+        </div>
+        <p>The hedgehog runs straight for Hedgeheart! Left and right to change lanes, up to jump, or swipe.</p>
+
+        <div id="game-container">
+            <div id="hud">
+                <div id="hud-text">
+                    <div id="hud-best"></div>
+                    <div id="hud-score"></div>
+                </div>
+                <button id="hud-button">Start game?</button>
+            </div>
+        </div>
+
+        <div class="mobile-controls">
+            <button id="left-btn">◀</button>
+            <button id="jump-btn">▲</button>
+            <button id="right-btn">▶</button>
+        </div>
+    </div>
+
+    <script type="module" src="platformer_v5.js"></script>
+</body>
+
+</html>

@@ -14,16 +14,18 @@ Serve the repository root over HTTP and open the page in a browser; opening the 
 python3 -m http.server 8000
 # http://localhost:8000/index.html     (live Season 1 game)
 # http://localhost:8000/index_s2.html  (Season 2, in development)
+# http://localhost:8000/index_s3.html  (3D version, in development)
 ```
 
-Phaser is vendored at `assets/phaser-arcade-physics.min.js` and loaded by a `<script>` tag. The `phaser` entry in `package.json` is unused by the pages.
+Phaser is vendored at `assets/phaser-arcade-physics.min.js` and loaded by a `<script>` tag. The `phaser` entry in `package.json` is unused by the pages. The 3D version uses three.js r160 instead, vendored at `assets/three.module.min.js` and imported as an ES module.
 
 ## Versioned game files
 
-Each `platformer*.js` is a complete, standalone snapshot of the game, not a module. Only two are live:
+Each `platformer*.js` is a complete, standalone snapshot of the game, not a module. Three are wired to pages:
 
 - `index.html` → `platformer_v3.1.js` (production, Season 1)
 - `index_s2.html` → `platformer_v4.js` (Season 2: unicorn, high score, rainbow, sunglasses costume, day/night cycle)
+- `index_s3.html` → `platformer_v5.js` (3D: the hedgehog runs straight ahead down three lanes)
 
 `platformer.js`, `platformer_v2.js`, `platformer_v3.js` and `earlyTests.html` are historical. Make new work in `platformer_v4.js` unless told otherwise; a fix meant for the live site must go into `platformer_v3.1.js`. The Season 2 roadmap sits in the comment block at the top of `platformer_v4.js`.
 
@@ -35,6 +37,19 @@ Each `platformer*.js` is a complete, standalone snapshot of the game, not a modu
 - **Obstacles** are defined as data objects in `addObstacle` (`speedFactor`, `startingHeight`, `gravity`, `width`, `tween`, `depth`, `score`) and drawn by `renderObstacle`, which switches on the `tween` name for animation. To add an obstacle: load its image in `preload`, add an entry to the list, and add a tween case if needed.
 - **Input** from the keyboard, the on-screen mobile buttons (`#left-btn`, `#jump-btn`, `#right-btn` in the HTML) and the AI socket all write to the shared `inputState`, which `update` reads.
 - The high score persists in `localStorage` under `j2hh_highscore`.
+
+## 3D version (platformer_v5.js)
+
+A port of v4 to three.js, loaded with `<script type="module">`. It keeps v4's conventions (top-level `let` state, `preload`/`create`/`update`, obstacle data objects in `addObstacle`, `renderObstacle` plus a `tween` switch in `animateObstacle`, shared `inputState`) but differs as follows:
+
+- The hedgehog stays at `z = 0` in one of three `lanes`; the world slides towards the camera at `worldSpeed()`. Obstacles spawn at `-spawnDistance` and close at `approachSpeed(obs)`.
+- Characters are the original PNGs on upright planes (`makeCard`) with blob shadows. Scenery is low-poly meshes. There is no physics engine: `collides` does a box test, and timers are counters in `timers`.
+- Obstacles carry `jumpable`; `fairLane` stops unjumpable ones closing all three lanes at once. Birds fly at jump height, so staying grounded passes under them.
+- `inputState.left`/`right` are one-shot lane changes consumed by `updatePlayer`.
+- The HUD (score, button, score flashes) is HTML inside `#game-container`, styled in `index_s3.html`.
+- If `dateOfMeetingInSeconds` has passed, a run counts down from `fallbackJourneySeconds`. The high score lives under `j2hh_highscore_3d`.
+- `window.j2hh` exposes state, `setScore` and `setSpeed` for debugging and headless play-testing.
+- The AI grid is a bird's-eye view: first index across the lanes, second from horizon (0) to hedgehog (9).
 
 ## AI training harness (Python)
 
