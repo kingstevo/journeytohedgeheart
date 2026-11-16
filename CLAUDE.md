@@ -14,7 +14,7 @@ Serve the repository root over HTTP and open the page in a browser; opening the 
 python3 -m http.server 8000
 # http://localhost:8000/index.html     (live Season 1 game)
 # http://localhost:8000/index_s2.html  (Season 2, in development)
-# http://localhost:8000/index_s3.html  (3D version, in development)
+# http://localhost:8000/3d/            (3D version, in development)
 ```
 
 Phaser is vendored at `assets/phaser-arcade-physics.min.js` and loaded by a `<script>` tag. The `phaser` entry in `package.json` is unused by the pages. The 3D version uses three.js r160 instead, vendored at `assets/three.module.min.js` and imported as an ES module.
@@ -25,7 +25,7 @@ Each `platformer*.js` is a complete, standalone snapshot of the game, not a modu
 
 - `index.html` → `platformer_v3.1.js` (production, Season 1)
 - `index_s2.html` → `platformer_v4.js` (Season 2: unicorn, high score, rainbow, sunglasses costume, day/night cycle)
-- `index_s3.html` → `platformer_v5.js` (3D: the hedgehog runs straight ahead down three lanes)
+- `3d/index.html` → `platformer_v5.js` (3D: the hedgehog runs straight ahead down three lanes). The page sets `<base href="../">`, so it shares the root's script, styles and `assets/`.
 
 `platformer.js`, `platformer_v2.js`, `platformer_v3.js` and `earlyTests.html` are historical. Make new work in `platformer_v4.js` unless told otherwise; a fix meant for the live site must go into `platformer_v3.1.js`. The Season 2 roadmap sits in the comment block at the top of `platformer_v4.js`.
 
@@ -46,7 +46,7 @@ A port of v4 to three.js, loaded with `<script type="module">`. It keeps v4's co
 - Characters are the original PNGs on upright planes (`makeCard`) with blob shadows. Scenery is low-poly meshes. There is no physics engine: `collides` does a box test, and timers are counters in `timers`.
 - Obstacles carry `jumpable`; `fairLane` stops unjumpable ones closing all three lanes at once. Birds fly at jump height, so staying grounded passes under them.
 - `inputState.left`/`right` are one-shot lane changes consumed by `updatePlayer`.
-- The HUD (score, button, score flashes) is HTML inside `#game-container`, styled in `index_s3.html`.
+- The HUD (score, button, score flashes) is HTML inside `#game-container`, styled in `3d/index.html`.
 - If `dateOfMeetingInSeconds` has passed, a run counts down from `fallbackJourneySeconds`. The high score lives under `j2hh_highscore_3d`.
 - `window.j2hh` exposes state, `setScore` and `setSpeed` for debugging and headless play-testing.
 - The AI grid is a bird's-eye view: first index across the lanes, second from horizon (0) to hedgehog (9).
