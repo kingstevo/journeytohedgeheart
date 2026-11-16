@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta name="theme-color" content="#87CEEB">
     <title>Journey to Hedgeheart 3D</title>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Heads-up display drawn in HTML on top of the 3D canvas */
@@ -24,6 +24,46 @@
             -webkit-user-select: none;
         }
 
+        /* The countdown, shown as a scoreboard */
+        #hud-scoreboard {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            padding: 6px;
+            background: rgba(16, 20, 54, 0.55);
+            border-radius: 14px;
+            text-shadow: none;
+        }
+
+        #hud-scoreboard div {
+            min-width: 58px;
+            padding: 4px 6px 5px;
+            text-align: center;
+            background: #141a45;
+            border-radius: 9px;
+            box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+
+        #hud-scoreboard b {
+            display: block;
+            font-size: 30px;
+            line-height: 1.1;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #hud-scoreboard span {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #7fd8ff;
+        }
+
         #hud-text {
             position: absolute;
             left: 20px;
@@ -31,13 +71,18 @@
             bottom: 16px;
         }
 
-        #hud-score {
+        #hud-message {
             font-size: 20px;
         }
 
         #hud-best {
             font-size: 16px;
             color: #ffdd00;
+        }
+
+        @media (max-width: 420px) {
+            #hud-scoreboard div { min-width: 48px; }
+            #hud-scoreboard b { font-size: 24px; }
         }
 
         #hud-button {
@@ -62,23 +107,6 @@
             opacity: 0;
             pointer-events: none;
         }
-
-        .score-flash {
-            position: absolute;
-            transform: translate(-50%, -50%);
-            font-size: 32px;
-            font-weight: bold;
-            color: #ff0;
-            white-space: nowrap;
-            animation: score-flash 1s linear forwards;
-        }
-
-        @keyframes score-flash {
-            to {
-                margin-top: -70px;
-                opacity: 0;
-            }
-        }
     </style>
 </head>
 
@@ -93,9 +121,15 @@
 
         <div id="game-container">
             <div id="hud">
+                <div id="hud-scoreboard" aria-label="Time to Hedgeheart">
+                    <div><b>0</b><span>days</span></div>
+                    <div><b>00</b><span>hrs</span></div>
+                    <div><b>00</b><span>min</span></div>
+                    <div><b>00</b><span>sec</span></div>
+                </div>
                 <div id="hud-text">
                     <div id="hud-best"></div>
-                    <div id="hud-score"></div>
+                    <div id="hud-message"></div>
                 </div>
                 <button id="hud-button">Start game?</button>
             </div>

@@ -65,7 +65,8 @@ let startingReward = 0;
 
 // three.js plumbing
 let renderer, scene, camera, clock;
-let container, hud, scoreText, highscoreText, hudButton;
+let container, hud, scoreboard, messageText, highscoreText, hudButton;
+let chips = [];                  // the 3D score chips floating over passed obstacles
 let textures = {};
 let sounds = {};
 let pathTexture, grassTexture, pathMaterial, grassMaterial;
@@ -119,7 +120,8 @@ function preload() {
 function create() {
     container = document.getElementById('game-container');
     hud = document.getElementById('hud');
-    scoreText = document.getElementById('hud-score');
+    scoreboard = document.getElementById('hud-scoreboard');
+    messageText = document.getElementById('hud-message');
     highscoreText = document.getElementById('hud-best');
     hudButton = document.getElementById('hud-button');
 
@@ -345,21 +347,122 @@ function liftShadow(shadow, height) {
 
 function createPlayer() {
     const group = new THREE.Group();
-    const card = makeCard('hedgehog', 1.7);
-    card.rotation.y = playerYaw;
+    const model = createHedgehog();
     const shadow = makeShadow(1.3);
-    group.add(card);
+    group.add(model);
     scene.add(group, shadow);
 
     player = {
-        group, card, shadow,
+        group, model, shadow,
+        legs: model.userData.legs,
+        shades: model.userData.shades,
+        materials: model.userData.materials,
         lane: 1,          // 0 left, 1 middle, 2 right
         x: 0, y: 0,
         velocityY: 0,
         halfWidth: 0.4,
         height: 0.85,
+        stride: 0,        // where the legs are in their running cycle
         spin: 0
     };
+    glowPlayer(null);
+}
+
+// The hedgehog, built from simple shapes and facing up the track (towards -z).
+// Colours are taken from the original artwork.
+function createHedgehog() {
+    const materials = [];
+    const paint = (colour) => {
+        const material = new THREE.MeshLambertMaterial({ color: colour, flatShading: true });
+        materials.push(material);
+        return material;
+    };
+    const skin = paint(0xf2b98c);
+    const ear = paint(0xd9966c);
+    const spines = paint(0x8a5a46);
+    const dark = paint(0x2b1d1a);
+    const lens = paint(0x2a1b4d);
+
+    const model = new THREE.Group();
+    const add = (geometry, material, x, y, z, parent = model) => {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        parent.add(mesh);
+        return mesh;
+    };
+    const ball = new THREE.IcosahedronGeometry(1, 2);
+
+    add(ball, skin, 0, 0.6, 0).scale.set(0.5, 0.4, 0.76);              // body
+    add(ball, skin, 0, 0.62, -0.74).scale.setScalar(0.34);              // head
+    const snout = add(new THREE.ConeGeometry(0.19, 0.42, 8), skin, 0, 0.55, -1.1);
+    snout.rotation.x = -Math.PI / 2;
+    add(ball, dark, 0, 0.55, -1.32).scale.setScalar(0.08);             // nose
+    [-1, 1].forEach((side) => {
+        add(ball, ear, side * 0.29, 0.93, -0.66).scale.set(0.15, 0.16, 0.08);
+        add(ball, dark, side * 0.17, 0.74, -1.02).scale.setScalar(0.055); // eyes
+    });
+
+    // The coat of spines: a dome over the back with a cone for every spine
+    const coatSize = new THREE.Vector3(0.55, 0.42, 0.72);
+    const coat = new THREE.Group();
+    coat.position.set(0, 0.64, 0.2);
+    coat.rotation.x = 0.35; // tipped back, to leave the face clear
+    model.add(coat);
+    const dome = add(new THREE.SphereGeometry(1, 14, 9, 0, Math.PI * 2, 0, Math.PI * 0.5), spines, 0, 0, 0, coat);
+    dome.scale.copy(coatSize);
+
+    const spineCount = 70;
+    const cones = new THREE.InstancedMesh(new THREE.ConeGeometry(0.065, 0.2, 5), spines, spineCount);
+    const matrix = new THREE.Matrix4(), quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
+    for (let i = 0; i < spineCount; i++) {
+        // spread the spines evenly over the dome
+        const polar = Math.acos(1 - (i + 0.5) / spineCount * 0.97);
+        const around = i * 2.39996;
+        const direction = new THREE.Vector3(
+            Math.sin(polar) * Math.cos(around), Math.cos(polar), Math.sin(polar) * Math.sin(around));
+        const normal = direction.clone().divide(coatSize).normalize();
+        const position = direction.multiply(coatSize).addScaledVector(normal, 0.06);
+        matrix.compose(position, quaternion.setFromUnitVectors(up, normal), one);
+        cones.setMatrixAt(i, matrix);
+    }
+    coat.add(cones);
+
+    // Four legs, each hinged at the hip so it can swing
+    const legGeometry = new THREE.CylinderGeometry(0.11, 0.09, 0.36, 6);
+    legGeometry.translate(0, -0.18, 0);
+    const legs = [[-1, -0.42], [1, -0.42], [-1, 0.42], [1, 0.42]].map(([side, z]) => {
+        const hip = new THREE.Group();
+        hip.position.set(side * 0.34, 0.4, z);
+        add(legGeometry, skin, 0, 0, 0, hip);
+        add(ball, skin, 0, -0.36, -0.05, hip).scale.set(0.12, 0.07, 0.17); // foot
+        model.add(hip);
+        return hip;
+    });
+
+    // The sunglasses costume, hidden until collected
+    const shades = new THREE.Group();
+    [-1, 1].forEach((side) => {
+        add(ball, lens, side * 0.18, 0.75, -1.0, shades).scale.set(0.14, 0.12, 0.07);
+        const arm = add(new THREE.BoxGeometry(0.03, 0.03, 0.4), dark, side * 0.31, 0.77, -0.8, shades);
+        arm.rotation.y = side * -0.15;
+    });
+    add(new THREE.BoxGeometry(0.2, 0.03, 0.03), dark, 0, 0.78, -1.04, shades);
+    shades.visible = false;
+    model.add(shades);
+
+    model.scale.setScalar(0.85);
+    model.userData = { legs, shades, materials };
+    return model;
+}
+
+// Tint the whole hedgehog. With no colour it gets a faint glow of its own, so
+// that it stays easy to see at night.
+function glowPlayer(colour) {
+    player.materials.forEach((material) => {
+        if (colour === null) material.emissive.copy(material.color).multiplyScalar(0.22);
+        else material.emissive.set(colour);
+    });
 }
 
 function littleFluffyClouds(z) {
@@ -406,10 +509,15 @@ function startGame() {
     player.y = 0;
     player.velocityY = 0;
     player.spin = 0;
-    player.card.material.map = textures.hedgehog;
-    player.card.material.color.set(0xffffff);
-    player.card.visible = true;
+    player.flash = 0;
+    player.shades.visible = false;
+    player.model.visible = true;
+    player.model.rotation.set(0, 0, 0);
     player.group.rotation.set(0, 0, 0);
+    glowPlayer(null);
+    chips.forEach(removeChip);
+    chips = [];
+    messageText.textContent = '';
 
     hudButton.classList.add('hidden');
     hudButton.blur();
@@ -604,10 +712,10 @@ function hitObstacle(obstacle) {
 
     if (obstacle.parameters.name === 'cyanHeart') {
         playerCollisionWinner();
-        scoreText.textContent = 'Congratulations! You made it to Hedgeheart!';
+        messageText.textContent = 'Congratulations! You made it to Hedgeheart!';
     } else {
         playerCollisionByee();
-        scoreText.textContent = 'Journey Over! Only ' + convertSecondsIntoText(score) + ' to go to Hedgeheart';
+        messageText.textContent = 'Journey Over! Only ' + convertSecondsIntoText(score) + ' to go to Hedgeheart';
     }
 
     hudButton.textContent = 'Play again?';
@@ -615,14 +723,14 @@ function hitObstacle(obstacle) {
 }
 
 function playerCollisionByee() {
-    player.card.material.color.set(0xff4040); // flash red to show game over
+    glowPlayer(0xaa0000);                     // flash red to show game over
     player.velocityY = 7;                     // knocked into the air, then off the scene
     player.spin = 9;
     playSound('obstacleHit');
 }
 
 function playerCollisionWinner() {
-    player.card.material.color.set(0xfff700); // golden hedgehog
+    glowPlayer(0x8a6a00); // golden hedgehog
     playSound('winner');
 
     // whatever is still on the track makes way for the party
@@ -678,7 +786,7 @@ function updateShades(dt) {
     const reachable = Math.abs(shades.z) < 0.7 && Math.abs(lanes[shades.lane] - player.x) < 1 && player.y < 1.3;
     if (reachable) {
         shadesEquipped = true;
-        player.card.material.map = textures.hedgehogShades;
+        player.shades.visible = true;
         player.flash = 0.8;
         playSound('obstaclePass');
         removeShades();
@@ -691,16 +799,123 @@ function updateShades(dt) {
 
 function showPassedCelebration(obstacle) {
     if (obstacle.score <= 0) return;
-    // float the time saved up from where the obstacle went by
-    const point = new THREE.Vector3(obstacle.x, 1.6, -3).project(camera);
-    const flash = document.createElement('div');
-    flash.className = 'score-flash';
-    flash.textContent = '- ' + convertSecondsIntoText(obstacle.score);
-    flash.style.left = ((point.x + 1) / 2 * 100) + '%';
-    flash.style.top = ((1 - point.y) / 2 * 100) + '%';
-    flash.addEventListener('animationend', () => flash.remove());
-    hud.appendChild(flash);
+    // a chip showing the time saved pops up over the obstacle's head as it goes by
+    const chip = makeChip(obstacle.score);
+    const top = obstacle.y + obstacle.height;
+    chip.position.set(obstacle.x, THREE.MathUtils.clamp(top + 0.5, 1.9, 3.4), 0.4);
+    chip.userData.age = 0;
+    scene.add(chip);
+    chips.push(chip);
     playSound('obstaclePass');
+}
+
+// Split a time into scoreboard cells. Leading units that are zero are dropped
+// unless keepAll is set.
+function timeCells(totalSeconds, keepAll) {
+    const total = Math.max(0, Math.round(totalSeconds));
+    const cells = [
+        { label: 'days', value: Math.floor(total / 86400) },
+        { label: 'hrs', value: Math.floor(total % 86400 / 3600) },
+        { label: 'min', value: Math.floor(total % 3600 / 60) },
+        { label: 'sec', value: total % 60 }
+    ];
+    while (!keepAll && cells.length > 1 && cells[0].value === 0) cells.shift();
+    cells.forEach((cell, i) => {
+        // days and the leading cell of a chip run free; the rest keep two digits
+        const pad = cell.label !== 'days' && (keepAll || i > 0);
+        cell.text = pad ? String(cell.value).padStart(2, '0') : String(cell.value);
+    });
+    return cells;
+}
+
+// A chunky 3D token with the time saved on its face, laid out like the scoreboard
+function makeChip(seconds) {
+    const cells = timeCells(seconds, false);
+    const cellWidth = 100, signWidth = 60, pad = 16, canvasHeight = 128;
+    const canvasWidth = signWidth + cells.length * cellWidth + pad;
+
+    const face = canvasTexture(canvasWidth, canvasHeight, (ctx) => {
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 68px Nunito, sans-serif';
+        ctx.fillText('−', pad / 2 + signWidth / 2, 72);
+        cells.forEach((cell, i) => {
+            const x = pad / 2 + signWidth + i * cellWidth + cellWidth / 2;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '800 64px Nunito, sans-serif';
+            ctx.fillText(cell.text, x, 72);
+            ctx.fillStyle = '#0b3d5c';
+            ctx.font = '800 24px Nunito, sans-serif';
+            ctx.fillText(cell.label.toUpperCase(), x, 106);
+        });
+    });
+    face.wrapS = face.wrapT = THREE.ClampToEdgeWrapping;
+
+    const height = 0.78, width = height * canvasWidth / canvasHeight, radius = 0.2, depth = 0.12, bevel = 0.045;
+    const w = width / 2 - bevel, h = height / 2 - bevel;
+    const outline = new THREE.Shape();
+    outline.moveTo(-w + radius, -h);
+    outline.lineTo(w - radius, -h);
+    outline.quadraticCurveTo(w, -h, w, -h + radius);
+    outline.lineTo(w, h - radius);
+    outline.quadraticCurveTo(w, h, w - radius, h);
+    outline.lineTo(-w + radius, h);
+    outline.quadraticCurveTo(-w, h, -w, h - radius);
+    outline.lineTo(-w, -h + radius);
+    outline.quadraticCurveTo(-w, -h, -w + radius, -h);
+    const bodyGeometry = new THREE.ExtrudeGeometry(outline, {
+        depth: depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 6
+    });
+    bodyGeometry.center();
+
+    const chip = new THREE.Group();
+    const body = new THREE.Mesh(bodyGeometry, new THREE.MeshLambertMaterial({
+        color: 0x12b5e0, emissive: 0x06506a, transparent: true
+    }));
+    const label = new THREE.Mesh(
+        new THREE.PlaneGeometry(width, height),
+        new THREE.MeshBasicMaterial({ map: face, transparent: true, fog: false, depthWrite: false }));
+    label.position.z = depth / 2 + bevel + 0.004;
+    chip.add(body, label);
+    chip.userData.parts = [body, label];
+    return chip;
+}
+
+function updateChips(dt) {
+    chips = chips.filter((chip) => {
+        const age = chip.userData.age += dt;
+        if (age > 1.5) {
+            removeChip(chip);
+            return false;
+        }
+        // pop out, drift up with a swing that shows off its thickness, then fade
+        const pop = Math.min(1, age / 0.18);
+        chip.scale.setScalar(pop * (1.25 - 0.25 * Math.min(1, age / 0.35)));
+        chip.position.y += 0.75 * dt;
+        chip.rotation.set(-0.12, Math.sin(age * 5.5) * 0.45, 0);
+        const opacity = Math.min(1, (1.5 - age) / 0.4);
+        chip.userData.parts.forEach((part) => part.material.opacity = opacity);
+        return true;
+    });
+}
+
+function removeChip(chip) {
+    scene.remove(chip);
+    chip.userData.parts.forEach((part) => {
+        part.geometry.dispose();
+        if (part.material.map) part.material.map.dispose();
+        part.material.dispose();
+    });
+}
+
+// Show the countdown as a scoreboard: one tile each for days, hours, minutes and seconds
+let scoreboardShowing = '';
+function updateScoreboard() {
+    const cells = timeCells(score, true);
+    const showing = cells.map((cell) => cell.text).join(':');
+    if (showing === scoreboardShowing) return;
+    scoreboardShowing = showing;
+    cells.forEach((cell, i) => scoreboard.children[i].firstElementChild.textContent = cell.text);
 }
 
 function playSound(name) {
@@ -865,9 +1080,8 @@ function update() {
         });
     }
 
-    if (gameState !== 'after') {
-        scoreText.textContent = 'Time to Hedgeheart: ' + convertSecondsIntoText(score);
-    }
+    updateScoreboard();
+    updateChips(dt);
     highscoreText.textContent = highscore > 0 ? 'Best: ' + convertSecondsIntoText(highscore) : '';
 
     if (score < 10 && winner == false && gameState === 'during') {
@@ -977,22 +1191,26 @@ function updatePlayer(dt) {
     inputState.left = false;
     inputState.right = false;
 
-    const card = player.card;
+    const model = player.model;
+    let turn = 0, pitch = 0;
 
     if (gameState === 'after' && !winner) {
         // tumble off the scene
         player.velocityY -= gravity * dt;
         player.y += player.velocityY * dt;
         player.group.rotation.z += player.spin * dt;
-        if (player.y < -30) card.visible = false;
+        if (player.y < -30) model.visible = false;
     } else if (gameState === 'after') {
-        // victory bounce
+        // victory bounce, turning round to show off
         player.y = Math.abs(Math.sin(elapsed * 5)) * 1.2;
+        turn = elapsed * 3;
     } else {
         const targetX = lanes[player.lane];
         const dx = targetX - player.x;
-        player.x += dx * Math.min(1, dt * 16);
-        player.group.rotation.z = -dx * 0.18; // lean into the lane change
+        player.x += dx * Math.min(1, dt * 11);
+        // the body turns towards the new lane and leans into the corner
+        turn = -THREE.MathUtils.clamp(dx * 0.8, -1, 1);
+        player.group.rotation.z = -dx * 0.1;
 
         player.velocityY -= gravity * dt;
         player.y += player.velocityY * dt;
@@ -1000,12 +1218,25 @@ function updatePlayer(dt) {
             player.y = 0;
             player.velocityY = 0;
         }
+        pitch = THREE.MathUtils.clamp(player.velocityY * 0.035, -0.4, 0.4); // nose up on the way up
     }
 
-    // a scampering bob while on the ground
+    // Legs: diagonal pairs swing together while running, and stretch out in the air
     const running = gameState !== 'after' && player.y === 0;
-    const bob = running ? Math.abs(Math.sin(elapsed * (6 + platformSpeed * 3))) * 0.09 : 0;
-    card.rotation.z = running ? Math.sin(elapsed * (6 + platformSpeed * 3) * 2) * 0.05 : 0;
+    let bob = 0;
+    if (running) {
+        player.stride += dt * (9 + platformSpeed * 3.5);
+        const swing = Math.sin(player.stride) * 0.95;
+        player.legs.forEach((leg, i) => leg.rotation.x = (i === 0 || i === 3) ? swing : -swing);
+        bob = Math.abs(Math.cos(player.stride)) * 0.07;
+        pitch = Math.sin(player.stride * 2) * 0.04;
+    } else {
+        player.legs.forEach((leg, i) => {
+            const reach = i < 2 ? 0.9 : -0.9;
+            leg.rotation.x += (reach - leg.rotation.x) * Math.min(1, dt * 14);
+        });
+    }
+    model.rotation.set(pitch, turn, 0);
 
     player.group.position.set(player.x, player.y + bob, 0);
     player.shadow.position.set(player.x, 0.03, 0);
@@ -1015,7 +1246,7 @@ function updatePlayer(dt) {
     // blink after picking up a costume
     if (player.flash > 0) {
         player.flash -= dt;
-        card.material.opacity = player.flash > 0 && Math.floor(player.flash * 10) % 2 ? 0.2 : 1;
+        model.visible = player.flash <= 0 || Math.floor(player.flash * 10) % 2 === 0;
     }
 
     // the camera drifts a little way after the hedgehog

@@ -43,10 +43,10 @@ Each `platformer*.js` is a complete, standalone snapshot of the game, not a modu
 A port of v4 to three.js, loaded with `<script type="module">`. It keeps v4's conventions (top-level `let` state, `preload`/`create`/`update`, obstacle data objects in `addObstacle`, `renderObstacle` plus a `tween` switch in `animateObstacle`, shared `inputState`) but differs as follows:
 
 - The hedgehog stays at `z = 0` in one of three `lanes`; the world slides towards the camera at `worldSpeed()`. Obstacles spawn at `-spawnDistance` and close at `approachSpeed(obs)`.
-- Characters are the original PNGs on upright planes (`makeCard`) with blob shadows. Scenery is low-poly meshes. There is no physics engine: `collides` does a box test, and timers are counters in `timers`.
+- The hedgehog is a 3D model built from primitives in `createHedgehog` (hinged legs, a coat of instanced spines, hidden sunglasses); `updatePlayer` swings the legs and turns the body into lane changes. The other characters are the original PNGs on upright planes (`makeCard`) with blob shadows. Scenery is low-poly meshes. There is no physics engine: `collides` does a box test, and timers are counters in `timers`.
 - Obstacles carry `jumpable`; `fairLane` stops unjumpable ones closing all three lanes at once. Birds fly at jump height, so staying grounded passes under them.
 - `inputState.left`/`right` are one-shot lane changes consumed by `updatePlayer`.
-- The HUD (score, button, score flashes) is HTML inside `#game-container`, styled in `3d/index.html`.
+- The HUD (scoreboard tiles for days/hrs/min/sec, message, button) is HTML inside `#game-container`, styled in `3d/index.html`. Passing an obstacle spawns a 3D score chip (`makeChip`) in the scene; `timeCells` formats both the scoreboard and the chips.
 - If `dateOfMeetingInSeconds` has passed, a run counts down from `fallbackJourneySeconds`. The high score lives under `j2hh_highscore_3d`.
 - `window.j2hh` exposes state, `setScore` and `setSpeed` for debugging and headless play-testing.
 - The AI grid is a bird's-eye view: first index across the lanes, second from horizon (0) to hedgehog (9).
