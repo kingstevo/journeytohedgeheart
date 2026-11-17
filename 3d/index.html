@@ -291,7 +291,7 @@
         #hud-button {
             position: absolute;
             left: 50%;
-            top: 80%; /* below the hedgehog, so its tricks and tumbles stay in view */
+            top: 89%; /* below the hedgehog, so its tricks and tumbles stay in view */
             transform: translate(-50%, -50%);
             min-width: 200px;
             white-space: nowrap;
@@ -305,6 +305,24 @@
             cursor: pointer;
             pointer-events: auto;
             transition: opacity 0.5s linear;
+        }
+
+        /* the hedgehog sits higher up a tall screen, and a landscape phone needs the bottom for its buttons */
+        @media (max-aspect-ratio: 1/1) {
+            #hud-button { top: 76%; }
+        }
+
+        @media (pointer: coarse) and (min-aspect-ratio: 1/1) {
+            #hud-button { top: 54%; }
+        }
+
+        /* short screens, such as a phone on its side: a smaller banner and button */
+        @media (max-height: 450px) {
+            #hud-banner { top: 36%; }
+            #hud-banner h1 { font-size: 30px; }
+            .logo-chip { width: 60px; height: 60px; }
+            #hud-banner.small { transform: translate(0, 0) scale(0.7); }
+            #hud-button { height: 56px; min-width: 160px; font-size: 20px; border-width: 4px; }
         }
 
         #hud-button.hidden {

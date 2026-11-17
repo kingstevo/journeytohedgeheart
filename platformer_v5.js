@@ -154,6 +154,7 @@ function create() {
 
     hudButton.addEventListener('click', () => startGame());
     setupSound();
+    initAudio();
 
     clock = new THREE.Clock();
     if (AIControl) connectWebSocket();
@@ -241,39 +242,118 @@ function createGround() {
 }
 
 function createScenery() {
-    const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x7a5a3a, flatShading: true });
-    const leafMaterial = new THREE.MeshLambertMaterial({ color: 0x6f9a3c, flatShading: true });
-    const rockMaterial = new THREE.MeshLambertMaterial({ color: 0x9c948a, flatShading: true });
-    const tuftMaterial = new THREE.MeshLambertMaterial({ color: 0x8aa548, flatShading: true });
-    const trunkGeometry = new THREE.CylinderGeometry(0.18, 0.3, 3, 6);
-    const leafGeometry = new THREE.IcosahedronGeometry(1, 1);
-    const rockGeometry = new THREE.DodecahedronGeometry(1, 0);
-    const tuftGeometry = new THREE.ConeGeometry(0.5, 1, 5);
+    const paint = (colour) => new THREE.MeshLambertMaterial({ color: colour, flatShading: true });
+    const m = {
+        trunk: paint(0x7a5a3a), bark: paint(0x9a8676), palmTrunk: paint(0x9b7a52),
+        leaf: paint(0x6f9a3c), darkLeaf: paint(0x4f7f3a), palmLeaf: paint(0x5f9a34),
+        blossom: paint(0xa77fd6), coconut: paint(0x6b4a2a),
+        rock: paint(0x9c948a), tuft: paint(0x8aa548), bush: paint(0x7aa04a)
+    };
+    const g = {
+        trunk: new THREE.CylinderGeometry(0.18, 0.3, 3, 6),
+        baobab: new THREE.CylinderGeometry(0.55, 0.85, 3.2, 8),
+        branch: new THREE.CylinderGeometry(0.08, 0.16, 1.3, 5),
+        blob: new THREE.IcosahedronGeometry(1, 1),
+        rock: new THREE.DodecahedronGeometry(1, 0),
+        tuft: new THREE.ConeGeometry(0.5, 1, 5),
+        frond: new THREE.ConeGeometry(0.42, 2.6, 4),
+        ball: new THREE.IcosahedronGeometry(0.17, 0)
+    };
+    g.branch.translate(0, 0.65, 0);
+    g.frond.translate(0, 1.3, 0);
+    const mesh = (geometry, material, x, y, z, parent) => {
+        const part = new THREE.Mesh(geometry, material);
+        part.position.set(x, y, z);
+        parent.add(part);
+        return part;
+    };
 
-    for (let i = 0; i < 70; i++) {
-        let item;
-        const kind = i % 5;
-        if (kind === 0) {
-            // flat-topped acacia tree
-            item = new THREE.Group();
-            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-            trunk.position.y = 1.5;
-            const canopy = new THREE.Mesh(leafGeometry, leafMaterial);
-            canopy.scale.set(2.6, 0.7, 2.6);
-            canopy.position.y = 3.3;
-            item.add(trunk, canopy);
-            item.scale.setScalar(0.9 + Math.random() * 0.8);
-        } else if (kind === 1) {
-            item = new THREE.Mesh(rockGeometry, rockMaterial);
+    // Each builder returns a tree standing on the origin, and how far from the
+    // road it must stand so that its branches do not hang over the track.
+    const builders = {
+        acacia() { // flat-topped thorn tree
+            const tree = new THREE.Group();
+            mesh(g.trunk, m.trunk, 0, 1.5, 0, tree);
+            mesh(g.blob, m.leaf, 0, 3.3, 0, tree).scale.set(2.6, 0.7, 2.6);
+            return { item: tree, margin: 2.2 };
+        },
+        baobab() { // a fat trunk with stubby branches and little tufts of leaves
+            const tree = new THREE.Group();
+            mesh(g.baobab, m.bark, 0, 1.6, 0, tree);
+            for (let i = 0; i < 5; i++) {
+                const angle = i / 5 * Math.PI * 2 + Math.random();
+                const branch = mesh(g.branch, m.bark, Math.cos(angle) * 0.3, 3, Math.sin(angle) * 0.3, tree);
+                branch.rotation.set(Math.sin(angle) * 0.7, 0, -Math.cos(angle) * 0.7);
+                const tip = new THREE.Vector3(0, 1.3, 0).applyEuler(branch.rotation).add(branch.position);
+                mesh(g.blob, m.darkLeaf, tip.x, tip.y + 0.1, tip.z, tree).scale.setScalar(0.45 + Math.random() * 0.2);
+            }
+            return { item: tree, margin: 1.8 };
+        },
+        palm() { // a leaning, curving trunk with drooping fronds and coconuts
+            const tree = new THREE.Group();
+            const lean = 0.6 + Math.random() * 0.8, height = 4 + Math.random() * 1.2;
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0, 0, 0), new THREE.Vector3(lean * 0.15, height * 0.4, 0),
+                new THREE.Vector3(lean * 0.55, height * 0.75, 0), new THREE.Vector3(lean, height, 0)
+            ]);
+            mesh(new THREE.TubeGeometry(curve, 8, 0.16, 6), m.palmTrunk, 0, 0, 0, tree);
+            for (let i = 0; i < 6; i++) {
+                const frond = mesh(g.frond, m.palmLeaf, lean, height, 0, tree);
+                frond.scale.set(1, 1, 0.25); // flattened into a leaf
+                frond.rotation.set(0, i / 6 * Math.PI * 2 + 0.3, 1.9 + Math.random() * 0.3, 'YXZ');
+            }
+            for (let i = 0; i < 3; i++) {
+                mesh(g.ball, m.coconut, lean + Math.cos(i * 2.1) * 0.2, height - 0.2, Math.sin(i * 2.1) * 0.2, tree);
+            }
+            tree.rotation.y = Math.random() * Math.PI * 2;
+            return { item: tree, margin: 2.6 };
+        },
+        roundTree(colour = m.darkLeaf) { // a full, rounded crown of leaves
+            const tree = new THREE.Group();
+            mesh(g.trunk, m.trunk, 0, 1.2, 0, tree).scale.set(1.1, 0.8, 1.1);
+            [[0, 3, 0, 1.35], [0.8, 2.7, 0.3, 0.95], [-0.7, 2.75, -0.2, 1], [0.1, 3.5, -0.6, 0.85]].forEach(([x, y, z, r]) => {
+                mesh(g.blob, colour, x, y, z, tree).scale.setScalar(r);
+            });
+            return { item: tree, margin: 1.9 };
+        },
+        jacaranda() { // the same shape, in flower
+            return builders.roundTree(m.blossom);
+        },
+        cypress() { // tall and thin
+            const tree = new THREE.Group();
+            mesh(g.trunk, m.trunk, 0, 0.5, 0, tree).scale.set(0.8, 0.35, 0.8);
+            mesh(g.blob, m.darkLeaf, 0, 2.6, 0, tree).scale.set(0.7, 2.3, 0.7);
+            return { item: tree, margin: 0.9 };
+        }
+    };
+    const treeKinds = Object.keys(builders);
+
+    for (let i = 0; i < 84; i++) {
+        let item, margin = 0;
+        const kind = i % 12;
+        if (kind < treeKinds.length) {
+            ({ item, margin } = builders[treeKinds[kind]]());
+            item.scale.multiplyScalar(0.85 + Math.random() * 0.6);
+            margin *= item.scale.x;
+        } else if (kind === 6 || kind === 7) {
+            item = new THREE.Mesh(g.rock, m.rock);
             const s = 0.4 + Math.random() * 0.9;
             item.scale.set(s * 1.3, s * 0.8, s);
             item.rotation.y = Math.random() * 6;
+        } else if (kind === 8) {
+            // a low bush
+            item = new THREE.Group();
+            [[0, 0.35, 0, 0.55], [0.5, 0.3, 0.1, 0.4], [-0.45, 0.28, -0.1, 0.42]].forEach(([x, y, z, r]) => {
+                mesh(g.blob, m.bush, x, y, z, item).scale.set(r, r * 0.8, r);
+            });
+            item.scale.setScalar(0.8 + Math.random() * 0.7);
         } else {
-            item = new THREE.Mesh(tuftGeometry, tuftMaterial);
+            item = new THREE.Mesh(g.tuft, m.tuft);
             const s = 0.5 + Math.random() * 0.7;
             item.scale.set(s, s, s);
             item.position.y = s * 0.5;
         }
+        item.userData.margin = margin;
         placeScenery(item, -Math.random() * 230);
         scene.add(item);
         scenery.push(item);
@@ -282,7 +362,8 @@ function createScenery() {
 
 function placeScenery(item, z) {
     const side = Math.random() < 0.5 ? -1 : 1;
-    item.position.x = side * (laneWidth * 1.5 + 1.5 + Math.random() * Math.random() * 45);
+    const margin = item.userData.margin || 0;
+    item.position.x = side * (laneWidth * 1.5 + 1.5 + margin + Math.random() * Math.random() * 45);
     item.position.z = z;
 }
 
@@ -432,7 +513,12 @@ function removeHump(hump) {
 function updateHumps(dt, speed) {
     humps = humps.filter((hump) => {
         hump.z += speed * dt;
-        hump.grow = Math.min(1, hump.grow + dt * 2); // swell up out of the road rather than blink in
+        // swell up out of the road rather than blink in, and sink back the same way
+        hump.grow = hump.sinking ? hump.grow - dt * 1.5 : Math.min(1, hump.grow + dt * 2);
+        if (hump.grow <= 0) {
+            removeHump(hump);
+            return false;
+        }
         hump.mesh.position.z = hump.z;
         hump.mesh.scale.y = Math.max(0.001, hump.grow);
         if (hump.z - hump.length / 2 < 14) return true;
@@ -560,7 +646,8 @@ function createPlayer() {
         hit: null,        // the knock-out animation in progress, if any
         trick: null,      // the hop or roll it is showing off while waiting to start
         trickIn: 1.2,     // seconds until the next one
-        tricksDone: 0
+        tricksDone: 0,
+        home: true        // on the start line (false from a crash until it has walked back)
     };
     glowPlayer(null);
 }
@@ -719,6 +806,7 @@ function startGame() {
     player.bump = 0;
     player.flash = 0;
     player.hit = null;
+    player.home = false;
     player.trick = null;
     player.shades.visible = false;
     player.stars.visible = false;
@@ -732,7 +820,7 @@ function startGame() {
     document.getElementById('hud-banner').classList.add('small'); // the title tucks itself into the corner
     hudButton.classList.add('hidden');
     hudButton.blur();
-    startMusic();
+    startMusic('game');
 }
 
 function countGameTime() {
@@ -965,11 +1053,14 @@ function hitObstacle(obstacle) {
     }
 
     hudButton.textContent = 'Play again?';
-    hudButton.classList.remove('hidden');
+    // after a crash the button waits until the hedgehog is back on the start line
+    if (winner) hudButton.classList.remove('hidden');
 }
 
 function playerCollisionByee(obstacle) {
     stopMusic();
+    player.home = false;
+    winner = false; // the heart may have been on its way, but this is no win
     if (obstacle.parameters.flat) {
         // down the hole
         player.hit = { type: 'hole', age: 0, x: obstacle.x };
@@ -1012,12 +1103,61 @@ function updateHitAnimation(dt) {
         tumble.rotation.y += 11 * dt;
         tumble.scale.setScalar(Math.max(0.35, 1 - hit.age * 1.1));
         player.legs.forEach((leg, i) => leg.rotation.x = Math.sin(elapsed * 30 + i * 1.6) * 0.9);
+        if (hit.popped) {
+            // up and out with a forward roll
+            const t = Math.min(1, (hit.age - hit.popped) / 0.75);
+            tumble.rotation.set(-(t * t * (3 - 2 * t)) * Math.PI * 2, 0, 0);
+            tumble.scale.setScalar(Math.min(1, 0.5 + t));
+            if (player.velocityY < 0 && player.y <= 0) {
+                player.y = 0;
+                tumble.rotation.set(0, 0, 0);
+                tumble.scale.setScalar(1);
+                burst('dust', player.x, 0.05, 0, 6, 1.6);
+                playSound('land');
+                clearTheRoad();
+                hit.type = 'return';
+            }
+            return;
+        }
         if (player.y < -2.5 && player.model.visible) {
             player.model.visible = false;
             burst('dust', hit.x, 0.1, 0, 8, 1.5);
             burst('star', hit.x, 0.3, 0, 5, 3.5);
             playSound('thud', { level: 0.6 });
         }
+        if (hit.age > 1.9) {
+            hit.popped = hit.age;
+            player.model.visible = true;
+            player.x = hit.x;
+            player.y = -0.4;
+            player.velocityY = 10;
+            burst('dust', hit.x, 0.2, 0, 10, 2.5);
+            playSound('jump');
+        }
+        return;
+    }
+
+    if (hit.type === 'getup') {
+        // a flip back onto its feet
+        player.velocityY -= gravity * dt;
+        player.y += player.velocityY * dt;
+        const t = Math.min(1, (hit.age - hit.startedAt) / hit.airtime);
+        tumble.rotation.x = hit.fromRoll + (hit.toRoll - hit.fromRoll) * (t * t * (3 - 2 * t));
+        tumble.rotation.z *= Math.exp(-dt * 10);
+        player.legs.forEach((leg, i) => leg.rotation.x += ((i < 2 ? 0.9 : -0.9) - leg.rotation.x) * Math.min(1, dt * 14));
+        const ground = groundHeight(player.x, player.z);
+        if (player.velocityY < 0 && player.y <= ground) {
+            player.y = ground;
+            tumble.rotation.set(0, 0, 0);
+            burst('dust', player.x, ground + 0.05, player.z, 6, 1.6);
+            playSound('land');
+            hit.type = 'return';
+        }
+        return;
+    }
+
+    if (hit.type === 'return') {
+        walkHome(dt);
         return;
     }
 
@@ -1065,6 +1205,20 @@ function updateHitAnimation(dt) {
         tumble.rotation.z = Math.sin(rested * 7) * 0.25 * Math.exp(-rested * 1.5); // rock to a stop
         player.y = ground;
         player.legs.forEach((leg, i) => leg.rotation.x = Math.sin(elapsed * 9 + i * 1.9) * 0.45);
+
+        if (rested > 1.6) {
+            // shake it off, flip back over and tidy the road away
+            player.stars.visible = false;
+            clearTheRoad();
+            player.velocityY = 7;
+            hit.type = 'getup';
+            hit.startedAt = hit.age;
+            hit.airtime = 2 * player.velocityY / gravity;
+            hit.fromRoll = tumble.rotation.x;
+            hit.toRoll = upsideDown + Math.PI;
+            playSound('jump');
+            return;
+        }
 
         player.stars.visible = true;
         player.stars.position.set(player.x, player.y + 1.45, player.z);
@@ -1202,7 +1356,7 @@ function makeChip(seconds) {
     });
     face.wrapS = face.wrapT = THREE.ClampToEdgeWrapping;
 
-    const height = 0.78, width = height * canvasWidth / canvasHeight, radius = 0.2, depth = 0.12, bevel = 0.045;
+    const height = 0.5, width = height * canvasWidth / canvasHeight, radius = 0.13, depth = 0.08, bevel = 0.03;
     const w = width / 2 - bevel, h = height / 2 - bevel;
     const outline = new THREE.Shape();
     outline.moveTo(-w + radius, -h);
@@ -1233,18 +1387,19 @@ function makeChip(seconds) {
 }
 
 function updateChips(dt) {
+    const life = 0.9;
     chips = chips.filter((chip) => {
         const age = chip.userData.age += dt;
-        if (age > 1.5) {
+        if (age > life) {
             removeChip(chip);
             return false;
         }
         // pop out, drift up with a swing that shows off its thickness, then fade
-        const pop = Math.min(1, age / 0.18);
-        chip.scale.setScalar(pop * (1.25 - 0.25 * Math.min(1, age / 0.35)));
-        chip.position.y += 0.75 * dt;
-        chip.rotation.set(-0.12, Math.sin(age * 5.5) * 0.45, 0);
-        const opacity = Math.min(1, (1.5 - age) / 0.4);
+        const pop = Math.min(1, age / 0.12);
+        chip.scale.setScalar(pop * (1.2 - 0.2 * Math.min(1, age / 0.25)));
+        chip.position.y += 1 * dt;
+        chip.rotation.set(-0.12, Math.sin(age * 7) * 0.4, 0);
+        const opacity = Math.min(1, (life - age) / 0.3);
         chip.userData.parts.forEach((part) => part.material.opacity = opacity);
         return true;
     });
@@ -1372,7 +1527,7 @@ function initAudio() {
     const noiseData = noise.getChannelData(0);
     for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
 
-    audio = { ctx, master, meter, effects, music, musicTone, bass, stabs, noise, samples: {}, playing: false, step: 0, nextStepAt: 0 };
+    audio = { ctx, master, meter, effects, music, musicTone, musicEcho, bass, stabs, noise, samples: {}, playing: false, mode: 'game', step: 0, nextStepAt: 0 };
 
     ['obstacleHit', 'obstaclePass', 'playerJump', 'playerLR', 'winner'].forEach((name) => {
         fetch('assets/sounds/' + name + '.mp3')
@@ -1383,7 +1538,8 @@ function initAudio() {
     });
 
     setInterval(scheduleMusic, 25);
-    if (gameState === 'during') startMusic();
+    if (gameState === 'during') startMusic('game');
+    else if (waitingToStart()) startMusic('intro');
 }
 
 function hz(midiNote) {
@@ -1542,17 +1698,25 @@ const musicLead = [
     [79, 0, 83, 0, 86, 0, 83, 0, 86, 0, 84, 0, 83, 0, 79, 0]
 ];
 
-function startMusic() {
+// mode is 'game' for the running music, or 'intro' for the gentle tune on the start screen
+function startMusic(mode) {
     if (!audio) return;
     const now = audio.ctx.currentTime;
     audio.playing = true;
+    audio.mode = mode;
     audio.step = 0;
     audio.nextStepAt = now + 0.08;
     audio.musicTone.frequency.cancelScheduledValues(now);
-    audio.musicTone.frequency.setValueAtTime(16000, now);
+    audio.musicTone.frequency.setValueAtTime(mode === 'intro' ? 5000 : 16000, now);
+    audio.musicEcho.gain.setValueAtTime(mode === 'intro' ? 0.45 : 0.12, now); // the intro rings out more
     audio.music.gain.cancelScheduledValues(now);
     audio.music.gain.setValueAtTime(0.0001, now);
-    audio.music.gain.linearRampToValueAtTime(0.36, now + 0.4);
+    audio.music.gain.linearRampToValueAtTime(mode === 'intro' ? 0.5 : 0.36, now + (mode === 'intro' ? 2 : 0.4));
+}
+
+// Is the hedgehog on the start line, waiting for a game?
+function waitingToStart() {
+    return gameState === 'before' || (gameState === 'after' && !winner && player.home);
 }
 
 function stopMusic() {
@@ -1573,13 +1737,18 @@ function scheduleMusic() {
     if (audio.nextStepAt < now) audio.nextStepAt = now + 0.03; // catching up after a pause
     while (audio.nextStepAt < now + 0.15) {
         playMusicStep(audio.step, audio.nextStepAt);
-        const beatsPerMinute = 118 + (platformSpeed - 2) * 12; // the faster the game, the faster the band
+        // the faster the game, the faster the band; the intro ambles along
+        const beatsPerMinute = audio.mode === 'intro' ? 84 : 118 + (platformSpeed - 2) * 12;
         audio.nextStepAt += 60 / beatsPerMinute / 4;
         audio.step++;
     }
 }
 
 function playMusicStep(step, at) {
+    if (audio.mode === 'intro') {
+        playIntroStep(step, at);
+        return;
+    }
     const bar = Math.floor(step / 16), s = step % 16;
     const chord = musicChords[bar % 4];
     const out = audio.music;
@@ -1606,6 +1775,53 @@ function playMusicStep(step, at) {
     if (note && Math.floor(bar / 4) % 2 === 1) {
         tone({ type: 'triangle', from: hz(note), at, length: 0.2, level: 0.07, out });
     }
+}
+
+// The intro: a music box over soft chords, in the same key as the game music.
+// Eight bars: the melody, then the melody with a different ending.
+const introChords = [
+    { root: 48, notes: [60, 64, 67, 74] },  // C add 9
+    { root: 45, notes: [57, 60, 64, 67] },  // A minor 7
+    { root: 41, notes: [57, 60, 64, 65] },  // F major 7
+    { root: 43, notes: [55, 59, 62, 64] }   // G 6
+];
+const introMelody = [
+    [76, 0, 79, 0, 81, 79, 76, 0],
+    [72, 0, 76, 0, 79, 0, 76, 74],
+    [77, 0, 81, 0, 84, 81, 79, 77],
+    [79, 0, 76, 0, 74, 0, 0, 0],
+    [76, 0, 79, 0, 81, 79, 76, 0],
+    [72, 0, 76, 0, 79, 0, 81, 83],
+    [84, 0, 81, 0, 77, 0, 81, 79],
+    [74, 0, 76, 0, 72, 0, 0, 0]
+];
+
+function playIntroStep(step, at) {
+    const bar = Math.floor(step / 16), s = step % 16;
+    const chord = introChords[bar % 4];
+    const out = audio.music;
+    const beat = 60 / 84;
+
+    if (s === 0) {
+        // a soft pad that swells in and lasts the bar
+        chord.notes.forEach((note) => tone({ type: 'triangle', from: hz(note), at, attack: 0.5, length: beat * 4.2, level: 0.022, out }));
+        tone({ from: hz(chord.root - 12), at, attack: 0.08, length: beat * 2, level: 0.12, out });
+    }
+    if (s === 8) tone({ from: hz(chord.root - 5), at, attack: 0.08, length: beat * 2, level: 0.08, out });
+
+    if (s % 2 === 0) {
+        // the music box, with a faint ring an octave up
+        const note = introMelody[bar % 8][s / 2];
+        if (note) {
+            tone({ from: hz(note), at, attack: 0.004, length: 1.1, level: 0.075, out });
+            tone({ from: hz(note + 12), at, attack: 0.004, length: 0.5, level: 0.018, out });
+        }
+    } else if (s % 4 === 3) {
+        // a quiet broken chord in the gaps
+        tone({ from: hz(chord.notes[(s >> 2) % chord.notes.length]), at, attack: 0.004, length: 0.6, level: 0.025, out });
+    }
+    // a whisper of a shaker on the off-beats
+    if (s % 4 === 2) hiss({ filter: 'highpass', from: 6000, at, length: 0.05, level: 0.012, out });
 }
 
 // ---------------------------------------------------------------- controls
@@ -1728,7 +1944,8 @@ function applyWebSocketAction(action) {
 function update() {
     const dt = Math.min(clock.getDelta(), 0.05);
     elapsed += dt;
-    const speed = gameState === 'after' ? 0 : worldSpeed();
+    // the world stands still after a crash, until the hedgehog is back on the start line
+    const speed = gameState === 'during' || waitingToStart() ? worldSpeed() : 0;
 
     updateTimers(dt);
     updateWorld(dt, speed);
@@ -1895,7 +2112,7 @@ function updatePlayer(dt) {
     let bob = 0;
     if (player.hit) {
         updateHitAnimation(dt);
-    } else if (gameState === 'after') {
+    } else if (gameState === 'after' && winner) {
         // victory bounce, turning round to show off
         player.y = groundHeight(player.x, 0) + Math.abs(Math.sin(elapsed * 5)) * 1.2;
         player.tumble.rotation.set(0, elapsed * 3, 0);
@@ -1908,7 +2125,7 @@ function updatePlayer(dt) {
         player.group.rotation.z = -dx * 0.1 - player.bump * 0.4;
 
         // while waiting for the game to start, it shows off
-        const flourish = gameState === 'before' ? updateIdleTricks(dt) : { roll: 0, spin: 0 };
+        const flourish = gameState !== 'during' ? updateIdleTricks(dt) : { roll: 0, spin: 0 };
 
         // stand on the road, wherever it has got to
         const ground = groundHeight(player.x, 0);
@@ -1973,6 +2190,63 @@ function updatePlayer(dt) {
         cameraX + (Math.random() - 0.5) * shake,
         3.7 + cameraLift + (Math.random() - 0.5) * shake,
         6.8);
+}
+
+// After a crash, everything left on the road vanishes in a puff of dust and
+// the humps sink back into the road, ready for the next go.
+function clearTheRoad() {
+    obstaclesArray.forEach((obstacle) => {
+        burst('dust', obstacle.x, obstacle.ground + 0.4, obstacle.z, 5, 2);
+        scene.remove(obstacle.group, obstacle.shadow);
+    });
+    obstaclesArray = [];
+    blockedLanes = [];
+    humps.forEach((hump) => hump.sinking = true);
+    if (shades) removeShades();
+}
+
+// Trot back to the middle lane on the start line, then wait for the next game
+function walkHome(dt) {
+    const tumble = player.tumble;
+    const dx = lanes[1] - player.x, dz = 0 - player.z;
+    const distance = Math.hypot(dx, dz);
+    const ground = groundHeight(player.x, player.z);
+
+    player.stride += dt * 14;
+    const swing = Math.sin(player.stride) * 0.95;
+    player.legs.forEach((leg, i) => leg.rotation.x = (i === 0 || i === 3) ? swing : -swing);
+
+    if (distance > 0.05) {
+        const step = Math.min(distance, 3.2 * dt);
+        player.x += dx / distance * step;
+        player.z += dz / distance * step;
+        // face the way it is going
+        const heading = Math.atan2(-dx, -dz);
+        tumble.rotation.y += (heading - tumble.rotation.y) * Math.min(1, dt * 10);
+        player.y = ground + Math.abs(Math.sin(player.stride)) * 0.12;
+        return;
+    }
+
+    // home: turn to face up the road again
+    player.x = lanes[1];
+    player.z = 0;
+    player.y = ground;
+    tumble.rotation.y *= Math.exp(-dt * 10);
+    if (Math.abs(tumble.rotation.y) > 0.02) return;
+
+    tumble.rotation.set(0, 0, 0);
+    player.hit = null;
+    player.home = true;
+    player.lane = 1;
+    player.velocityY = 0;
+    player.onFloor = true;
+    player.trick = null;
+    player.trickIn = 0.6;
+    // and the world is the start screen once more: daylight, a gentle pace and the intro tune
+    platformSpeed = 1;
+    nightTarget = 0;
+    startMusic('intro');
+    hudButton.classList.remove('hidden');
 }
 
 // Before the game starts the hedgehog entertains itself: a hop, a forward roll,
@@ -2075,7 +2349,7 @@ function convertSecondsIntoText(totalSeconds) {
 
 // A window onto the game for debugging and automated play-testing
 window.j2hh = {
-    get state() { return { gameState, score, platformSpeed, gameClock, winner, lane: player.lane, obstacles: obstaclesArray.length }; },
+    get state() { return { gameState, score, platformSpeed, gameClock, winner, lane: player.lane, obstacles: obstaclesArray.length, home: player.home }; },
     get obstacles() { return obstaclesArray; },
     get player() { return player; },
     get humps() { return humps; },
